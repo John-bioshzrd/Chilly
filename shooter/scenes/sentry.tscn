@@ -1,0 +1,15 @@
+[gd_scene load_steps=3 format=3 uid="uid://c2i2c5b54twjh"]
+
+[ext_resource type="Script" uid="uid://c5jrsqjcywa2a" path="res://scripts/mouse_fire.gd" id="2_1dloa"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_g2els"]
+radius = 35.057095
+
+[node name="Sentry" type="CharacterBody2D"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_g2els")
+
+[node name="Marker2D" type="Marker2D" parent="CollisionShape2D"]
+position = Vector2(37, 0)
+script = ExtResource("2_1dloa")

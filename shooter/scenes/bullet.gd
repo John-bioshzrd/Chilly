@@ -1,6 +1,7 @@
-extends AnimatableBody2D
+extends Hitbox
 
-var SPEED = 10
+var dir := Vector2.ZERO
+const SPEED := 100
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -9,4 +10,8 @@ func _ready() -> void:
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
-	position.x -= SPEED
+	position += dir * SPEED * delta
+
+
+func _on_visible_on_screen_notifier_2d_screen_exited() -> void:
+	queue_free()

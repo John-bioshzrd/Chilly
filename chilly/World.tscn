@@ -1,8 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://cpl6tpw3wfqse"]
+[gd_scene load_steps=6 format=3 uid="uid://cpl6tpw3wfqse"]
 
 [ext_resource type="PackedScene" uid="uid://b1ir5di4s8ivx" path="res://Character.tscn" id="1_c6gwx"]
 [ext_resource type="PackedScene" uid="uid://yto0wud8mal0" path="res://Objects/container.tscn" id="2_2dftf"]
 [ext_resource type="PackedScene" uid="uid://bjf5inc6l4a3y" path="res://Objects/funnel.tscn" id="2_bcbcq"]
+[ext_resource type="PackedScene" uid="uid://c8k7k1jqvcao6" path="res://Objects/lemon.tscn" id="4_js7pq"]
 
 [sub_resource type="GDScript" id="GDScript_c6gwx"]
 script/source = "extends Node2D
@@ -69,3 +70,6 @@ position = Vector2(205, 160)
 
 [node name="Container2" parent="." instance=ExtResource("2_2dftf")]
 position = Vector2(216, 376)
+
+[node name="Lemon" parent="." instance=ExtResource("4_js7pq")]
+position = Vector2(326, 157)
