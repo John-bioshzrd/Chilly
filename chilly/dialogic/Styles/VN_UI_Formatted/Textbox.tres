@@ -1,0 +1,10 @@
+[gd_resource type="StyleBoxTexture" load_steps=2 format=3 uid="uid://bhe1p38g47508"]
+
+[ext_resource type="Texture2D" uid="uid://bn2ghgcb8d2pb" path="res://dialogic/Styles/VN_UI/textbox.png" id="1_vsa1b"]
+
+[resource]
+texture = ExtResource("1_vsa1b")
+expand_margin_left = 50.0
+expand_margin_top = 10.0
+expand_margin_right = 50.0
+expand_margin_bottom = 10.0

@@ -1,0 +1,58 @@
+{
+"@path": "res://addons/dialogic/Resources/character.gd",
+"@subpath": NodePath(""),
+&"_translation_id": "",
+&"color": Color(1, 1, 1, 1),
+&"custom_info": {
+"prefix": "",
+"sound_mood_default": "",
+"sound_moods": {},
+"style": "",
+"suffix": ""
+},
+&"default_portrait": "Default",
+&"description": "",
+&"display_name": "hachiware",
+&"mirror": false,
+&"nicknames": [""],
+&"offset": Vector2(0, 0),
+&"portraits": {
+"Default": {
+"export_overrides": {
+"image": "\"res://dialogic/hachiware/portraits/Screen Shot 2025-12-31 at 6.19.45 PM.png\""
+},
+"mirror": false,
+"offset": Vector2(0, 0),
+"scale": 1,
+"scene": "res://dialogic/hachiware/layeredPortraits/layered_portrait_hachiware.tscn"
+},
+"Puking": {
+"export_overrides": {
+"image": "\"res://dialogic/hachiware/portraits/Screen Shot 2025-12-31 at 6.18.28 PM.png\""
+},
+"mirror": false,
+"offset": Vector2(0, 0),
+"scale": 1,
+"scene": ""
+},
+"Smug": {
+"export_overrides": {
+"image": "\"res://dialogic/hachiware/portraits/Screen Shot 2025-12-31 at 6.18.12 PM.png\""
+},
+"mirror": false,
+"offset": Vector2(0, 0),
+"scale": 1,
+"scene": ""
+},
+"Talking": {
+"export_overrides": {
+"image": "\"res://dialogic/hachiware/portraits/Screen Shot 2025-12-31 at 6.17.44 PM.png\""
+},
+"mirror": false,
+"offset": Vector2(0, 0),
+"scale": 1,
+"scene": ""
+}
+},
+&"scale": 1.0
+}

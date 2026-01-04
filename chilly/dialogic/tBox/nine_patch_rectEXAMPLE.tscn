@@ -1,0 +1,23 @@
+[gd_scene load_steps=5 format=3 uid="uid://pk7ahvg54ke5"]
+
+[ext_resource type="Shader" uid="uid://bvudev24r0i47" path="res://dialogic/tBox/nine_patch_rectEXAMPLE.gdshader" id="1_6pthi"]
+[ext_resource type="Texture2D" uid="uid://dl8i6i4oqhiy8" path="res://dialogic/tBox/stars.png" id="2_0o78a"]
+[ext_resource type="Texture2D" uid="uid://ck1nkacm87hcl" path="res://dialogic/tBox/square.png" id="3_6pthi"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_o2nfj"]
+shader = ExtResource("1_6pthi")
+shader_parameter/star_texture = ExtResource("2_0o78a")
+shader_parameter/anim_speed = 5.0
+
+[node name="NinePatchRect" type="NinePatchRect"]
+material = SubResource("ShaderMaterial_o2nfj")
+offset_left = 124.0
+offset_top = 221.0
+offset_right = 1002.0
+offset_bottom = 614.0
+texture = ExtResource("3_6pthi")
+region_rect = Rect2(110.27887, 105.19869, 523.93744, 526.96606)
+patch_margin_left = 110
+patch_margin_top = 130
+patch_margin_right = 120
+patch_margin_bottom = 150

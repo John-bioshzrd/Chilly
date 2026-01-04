@@ -6,10 +6,11 @@
 script/source = "extends TubeChain
 
 @onready var label = $Label
+var isLast = false
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	pass # Replace with function body.
+	var isLast = next == null
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -24,7 +25,7 @@ func increment():
 
 func decrement(amt = 1):
 	fill -= amt
-	if next:
+	if !isLast:
 		next.increment()
 	#else score +=1
 "

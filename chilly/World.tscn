@@ -51,6 +51,9 @@ func find_node(name):
 [node name="Node2D" type="Node2D"]
 script = SubResource("GDScript_c6gwx")
 
+[node name="Lemon" parent="." instance=ExtResource("4_js7pq")]
+position = Vector2(291, 160)
+
 [node name="StaticBody2D" type="StaticBody2D" parent="."]
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D"]
@@ -70,6 +73,3 @@ position = Vector2(205, 160)
 
 [node name="Container2" parent="." instance=ExtResource("2_2dftf")]
 position = Vector2(216, 376)
-
-[node name="Lemon" parent="." instance=ExtResource("4_js7pq")]
-position = Vector2(326, 157)

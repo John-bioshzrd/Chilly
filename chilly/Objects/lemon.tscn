@@ -1,15 +1,13 @@
-[gd_scene load_steps=4 format=3 uid="uid://c8k7k1jqvcao6"]
+[gd_scene load_steps=3 format=3 uid="uid://c8k7k1jqvcao6"]
 
 [ext_resource type="Script" uid="uid://cd4w8huiss4dp" path="res://Objects/lemon.gd" id="1_8yiu7"]
-[ext_resource type="Script" uid="uid://d8k10us2kyyo" path="res://Objects/lemonLayer.gd" id="2_yqkok"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_exlhe"]
 
-[node name="Lemon" type="AnimatableBody2D"]
+[node name="Lemon" type="Area2D"]
 script = ExtResource("1_8yiu7")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_exlhe")
-script = ExtResource("2_yqkok")
 
 [node name="Node2D" type="Node2D" parent="."]
