@@ -1,0 +1,232 @@
+[gd_scene load_steps=6 format=3 uid="uid://w11i888ms1pa"]
+
+[ext_resource type="PackedScene" uid="uid://pk7ahvg54ke5" path="res://stuffIneed/tBox/nine_patch_rectEXAMPLE.tscn" id="1_kjl2v"]
+
+[sub_resource type="GDScript" id="GDScript_arcgl"]
+script/source = "extends \"res://addons/yads/gui/base_dialogue_gui.gd\"
+
+
+
+@onready var dialogue_label: RichTextLabel = %DialogueLabel
+@onready var character_label: RichTextLabel = %CharacterLabel
+
+func _ready():
+	# It is important to call the base class _ready()
+	super()
+	# Note: we re-emit signals from the label, which is not a good pattern,
+	# however it is necessary to keep the API flexible
+	# (this way the handler has no dependency on dialogue_label)
+	# A somewhat cleaner alternative might be to move the label code here.
+	dialogue_label.entry_finished.connect(_on_entry_finished)
+	dialogue_label.next_entry_requested.connect(_on_next_entry_requested)
+
+func _on_entry_finished():
+	entry_finished.emit()
+
+func _on_next_entry_requested():
+	next_entry_requested.emit()
+
+func play_dialogue(dialogue_entry: String):
+	dialogue_label.play_dialogue(dialogue_entry)
+
+func _on_character_changed(char_name: String, meta: Array):
+	character_label.text = char_name
+"
+
+[sub_resource type="GDScript" id="GDScript_kjl2v"]
+script/source = "extends RichTextLabel
+## Dialogue label with typing animation and sounds
+
+## Emitted when the entry is finished showing (necessary for typing animations)
+signal entry_finished
+## Emitted when the next entry should start to appear
+signal next_entry_requested
+
+## The action to press to skip typing.
+@export var skip_action: String = \"ui_cancel\"
+## The speed with which the text types out.
+@export var seconds_per_step: float = 0.04
+## Automatically have a brief pause when these characters are encountered.
+@export var pause_at_characters: String = \".?!\"
+## The amount of time to pause when exposing a character present in pause_at_characters.
+@export var seconds_per_pause_step: float = 0.3
+## Characters for which no sound is played.
+@export var skip_sound_characters: String = \" ()\"
+## Time after which to automatically continue the dialogue.
+## Set below zero to disable.
+@export var auto_continue_time: float = -1.0
+
+@onready var timer: Timer = $Timer
+@onready var autocomplete_timer: Timer = $AutocompleteTimer
+## Prompts player to click to continue.
+@onready var prompt_texture: TextureRect = $PromptTexture
+## Speech sounds
+@onready var spoke_sound: AudioStreamPlayer = $Spoke
+@onready var finished_sound: AudioStreamPlayer = $Finished
+
+# Text without bbcode
+var ctext: String
+var current_char := 0
+
+func play_dialogue(dialogue_entry: String) -> void:
+	prompt_texture.hide()
+	text = dialogue_entry
+	ctext = get_parsed_text()
+	visible_characters = 0
+	timer.start(seconds_per_pause_step)
+
+func is_dialogue_finished() -> bool:
+	return visible_characters == ctext.length() or visible_characters == -1
+
+func _on_timer_timeout():
+	if is_dialogue_finished():
+		prompt_texture.show()
+		finished_sound.play()
+		entry_finished.emit()
+		if auto_continue_time > 0.0:
+			autocomplete_timer.start(auto_continue_time)
+		return
+	if ctext[visible_characters] in pause_at_characters:
+		timer.start(seconds_per_pause_step)
+	else:
+		timer.start(seconds_per_step)
+	if not ctext[visible_characters] in skip_sound_characters + pause_at_characters:
+		spoke_sound.play()
+	visible_characters += 1
+
+func _on_autocomplete_timer_timeout() -> void:
+	check_skip_or_finish()
+
+func _unhandled_input(_event):
+	if Input.is_action_just_pressed(skip_action):
+		check_skip_or_finish()
+
+func _gui_input(event):
+	if event.is_action_pressed(\"left_mouse\"):
+		check_skip_or_finish()
+
+func check_skip_or_finish():
+	# There can be a moment (eg when ending on a longer pause)
+	# between finishing display and _on_timer_timeout
+	# where is_dialogue_finished returns true;
+	# we shouldn't emit next_entry_requested before entry_finished
+	# so we check the timer as well
+	if is_dialogue_finished() and timer.is_stopped():
+		next_entry_requested.emit()
+	else:
+		# We force the dialogue to show immediately
+		visible_characters = -1
+		timer.start(0.01)
+		get_viewport().set_input_as_handled()
+"
+
+[sub_resource type="Gradient" id="Gradient_mi1wf"]
+offsets = PackedFloat32Array(0, 0.640167)
+colors = PackedColorArray(1, 1, 1, 1, 0, 0, 0, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_pdyht"]
+gradient = SubResource("Gradient_mi1wf")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0, 0)
+
+[node name="ExampleDialogueGui" type="CanvasLayer"]
+script = SubResource("GDScript_arcgl")
+
+[node name="NinePatchRect" parent="." instance=ExtResource("1_kjl2v")]
+offset_left = 17.0
+offset_top = 348.0
+offset_right = 1129.0
+offset_bottom = 628.0
+
+[node name="MarginContainer" type="MarginContainer" parent="NinePatchRect"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 31.0
+offset_top = 19.0
+offset_right = 31.0
+offset_bottom = 19.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="NinePatchRect/MarginContainer"]
+layout_mode = 2
+
+[node name="CharacterLabel" type="RichTextLabel" parent="NinePatchRect/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.501961)
+layout_mode = 2
+mouse_filter = 1
+bbcode_enabled = true
+text = "Character"
+fit_content = true
+scroll_active = false
+
+[node name="DialogueLabel" type="RichTextLabel" parent="NinePatchRect/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "Dialogue"
+fit_content = true
+scroll_active = false
+visible_characters_behavior = 1
+script = SubResource("GDScript_kjl2v")
+
+[node name="Spoke" type="AudioStreamPlayer" parent="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
+
+[node name="Finished" type="AudioStreamPlayer" parent="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
+
+[node name="PromptTexture" type="TextureRect" parent="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -40.0
+grow_horizontal = 0
+grow_vertical = 0
+texture = SubResource("GradientTexture2D_pdyht")
+
+[node name="Timer" type="Timer" parent="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
+one_shot = true
+
+[node name="AutocompleteTimer" type="Timer" parent="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
+one_shot = true
+
+[node name="ResponsesMenu" type="VBoxContainer" parent="NinePatchRect/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 8
+theme_override_constants/separation = 5
+
+[node name="ResponseExample" type="Button" parent="NinePatchRect/MarginContainer/VBoxContainer/ResponsesMenu"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Response example"
+autowrap_mode = 3
+
+[node name="Panel" type="Panel" parent="."]
+visible = false
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -518.0
+offset_top = -376.0
+offset_right = 531.0
+offset_bottom = -51.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[connection signal="timeout" from="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel/Timer" to="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel" method="_on_timer_timeout"]
+[connection signal="timeout" from="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel/AutocompleteTimer" to="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel" method="_on_autocomplete_timer_timeout"]

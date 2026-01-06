@@ -1,0 +1,45 @@
+[gd_scene load_steps=6 format=3 uid="uid://d2bdmxc6jqhdf"]
+
+[ext_resource type="Texture2D" uid="uid://dgx6i4o31citu" path="res://stuffIneed/chiikawa/portraits/Screen Shot 2025-12-31 at 6.00.13 PM.png" id="1_ynlhb"]
+[ext_resource type="Script" uid="uid://cv5xwbm0rlkwr" path="res://VN_WORLD/characters/VNCharacter.gd" id="2_o1ks2"]
+[ext_resource type="Resource" uid="uid://ddhdh1j06862s" path="res://VN_WORLD/characters/chiikawa.tres" id="3_pipxh"]
+[ext_resource type="Script" uid="uid://cfiu61dpeu2g" path="res://VN_WORLD/characters/button.gd" id="4_6y0hs"]
+[ext_resource type="AudioStream" uid="uid://cn2wkrd8m1bgk" path="res://sfx/horn.mp3" id="5_ihh4l"]
+
+[node name="Chiikawa" type="TextureRect"]
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -303.0
+offset_top = 3.0
+offset_right = 314.14288
+offset_bottom = -5.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_ynlhb")
+expand_mode = 3
+stretch_mode = 4
+script = ExtResource("2_o1ks2")
+data = ExtResource("3_pipxh")
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.49400002
+anchor_top = 0.43500003
+anchor_right = 0.49400002
+anchor_bottom = 0.43500003
+offset_left = -21.86856
+offset_top = -19.400024
+offset_right = 21.13144
+offset_bottom = 19.599976
+grow_horizontal = 2
+grow_vertical = 2
+icon_alignment = 1
+script = ExtResource("4_6y0hs")
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("5_ihh4l")
+
+[connection signal="button_down" from="Button" to="Button" method="_on_button_down"]

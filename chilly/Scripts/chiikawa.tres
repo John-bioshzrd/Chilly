@@ -1,8 +1,8 @@
 [gd_resource type="Resource" script_class="VNCharacterData" load_steps=4 format=3 uid="uid://cxopwor1ekj3t"]
 
 [ext_resource type="Texture2D" uid="uid://cyvc6sskxgoum" path="res://icon.svg" id="1_aktwt"]
-[ext_resource type="Script" uid="uid://dqb70imijlktn" path="res://Resource experiment/VNCharacterData.gd" id="1_bg7ym"]
-[ext_resource type="PackedScene" uid="uid://d2bdmxc6jqhdf" path="res://Resource experiment/chiikawa.tscn" id="2_ino1q"]
+[ext_resource type="Script" uid="uid://dgvcdjxf05rl4" path="res://VN_WORLD/characters/VNCharacterData.gd" id="1_bg7ym"]
+[ext_resource type="PackedScene" uid="uid://d2bdmxc6jqhdf" path="res://VN_WORLD/characters/chiikawa.tscn" id="2_ino1q"]
 
 [resource]
 script = ExtResource("1_bg7ym")
