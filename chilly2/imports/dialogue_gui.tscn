@@ -19,6 +19,9 @@ func _ready():
 	# A somewhat cleaner alternative might be to move the label code here.
 	dialogue_label.entry_finished.connect(_on_entry_finished)
 	dialogue_label.next_entry_requested.connect(_on_next_entry_requested)
+	
+
+
 
 func _on_entry_finished():
 	entry_finished.emit()
@@ -43,7 +46,7 @@ signal entry_finished
 signal next_entry_requested
 
 ## The action to press to skip typing.
-@export var skip_action: String = \"ui_cancel\"
+@export var skip_action: String = \"ui_accept\"
 ## The speed with which the text types out.
 @export var seconds_per_step: float = 0.04
 ## Automatically have a brief pause when these characters are encountered.
@@ -131,22 +134,38 @@ fill_from = Vector2(0.5, 0.5)
 fill_to = Vector2(0, 0)
 
 [node name="ExampleDialogueGui" type="CanvasLayer"]
+follow_viewport_enabled = true
 script = SubResource("GDScript_arcgl")
 
-[node name="NinePatchRect" parent="." instance=ExtResource("1_kjl2v")]
-offset_left = 17.0
-offset_top = 348.0
-offset_right = 1129.0
-offset_bottom = 628.0
+[node name="Panel" type="Panel" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -518.0
+offset_top = -235.0
+offset_right = 531.0
+offset_bottom = -51.0
+grow_horizontal = 2
+grow_vertical = 0
+pivot_offset = Vector2(1771, -406)
 
-[node name="MarginContainer" type="MarginContainer" parent="NinePatchRect"]
+[node name="NinePatchRect" parent="Panel" instance=ExtResource("1_kjl2v")]
+layout_mode = 0
+offset_left = -42.0
+offset_top = -56.0
+offset_right = 1085.0
+offset_bottom = 224.0
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel/NinePatchRect"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 31.0
 offset_top = 19.0
-offset_right = 31.0
+offset_right = -24.0
 offset_bottom = 19.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -155,10 +174,10 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="VBoxContainer" type="VBoxContainer" parent="NinePatchRect/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/NinePatchRect/MarginContainer"]
 layout_mode = 2
 
-[node name="CharacterLabel" type="RichTextLabel" parent="NinePatchRect/MarginContainer/VBoxContainer"]
+[node name="CharacterLabel" type="RichTextLabel" parent="Panel/NinePatchRect/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0.501961)
 layout_mode = 2
@@ -168,7 +187,7 @@ text = "Character"
 fit_content = true
 scroll_active = false
 
-[node name="DialogueLabel" type="RichTextLabel" parent="NinePatchRect/MarginContainer/VBoxContainer"]
+[node name="DialogueLabel" type="RichTextLabel" parent="Panel/NinePatchRect/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
@@ -179,11 +198,11 @@ scroll_active = false
 visible_characters_behavior = 1
 script = SubResource("GDScript_kjl2v")
 
-[node name="Spoke" type="AudioStreamPlayer" parent="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
+[node name="Spoke" type="AudioStreamPlayer" parent="Panel/NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
 
-[node name="Finished" type="AudioStreamPlayer" parent="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
+[node name="Finished" type="AudioStreamPlayer" parent="Panel/NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
 
-[node name="PromptTexture" type="TextureRect" parent="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
+[node name="PromptTexture" type="TextureRect" parent="Panel/NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -196,37 +215,23 @@ grow_horizontal = 0
 grow_vertical = 0
 texture = SubResource("GradientTexture2D_pdyht")
 
-[node name="Timer" type="Timer" parent="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
+[node name="Timer" type="Timer" parent="Panel/NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
 one_shot = true
 
-[node name="AutocompleteTimer" type="Timer" parent="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
+[node name="AutocompleteTimer" type="Timer" parent="Panel/NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel"]
 one_shot = true
 
-[node name="ResponsesMenu" type="VBoxContainer" parent="NinePatchRect/MarginContainer/VBoxContainer"]
+[node name="ResponsesMenu" type="VBoxContainer" parent="Panel/NinePatchRect/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 8
 theme_override_constants/separation = 5
 
-[node name="ResponseExample" type="Button" parent="NinePatchRect/MarginContainer/VBoxContainer/ResponsesMenu"]
+[node name="ResponseExample" type="Button" parent="Panel/NinePatchRect/MarginContainer/VBoxContainer/ResponsesMenu"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Response example"
 autowrap_mode = 3
 
-[node name="Panel" type="Panel" parent="."]
-visible = false
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -518.0
-offset_top = -376.0
-offset_right = 531.0
-offset_bottom = -51.0
-grow_horizontal = 2
-grow_vertical = 0
-
-[connection signal="timeout" from="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel/Timer" to="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel" method="_on_timer_timeout"]
-[connection signal="timeout" from="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel/AutocompleteTimer" to="NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel" method="_on_autocomplete_timer_timeout"]
+[connection signal="timeout" from="Panel/NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel/Timer" to="Panel/NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel" method="_on_timer_timeout"]
+[connection signal="timeout" from="Panel/NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel/AutocompleteTimer" to="Panel/NinePatchRect/MarginContainer/VBoxContainer/DialogueLabel" method="_on_autocomplete_timer_timeout"]

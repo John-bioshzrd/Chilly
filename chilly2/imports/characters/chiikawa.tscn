@@ -1,22 +1,23 @@
 [gd_scene load_steps=6 format=3 uid="uid://d2bdmxc6jqhdf"]
 
-[ext_resource type="Texture2D" uid="uid://dgx6i4o31citu" path="res://stuffIneed/chiikawa/portraits/Screen Shot 2025-12-31 at 6.00.13 PM.png" id="1_ynlhb"]
-[ext_resource type="Script" uid="uid://cv5xwbm0rlkwr" path="res://VN_WORLD/characters/VNCharacter.gd" id="2_o1ks2"]
-[ext_resource type="Resource" uid="uid://ddhdh1j06862s" path="res://VN_WORLD/characters/chiikawa.tres" id="3_pipxh"]
-[ext_resource type="Script" uid="uid://cfiu61dpeu2g" path="res://VN_WORLD/characters/button.gd" id="4_6y0hs"]
-[ext_resource type="AudioStream" uid="uid://cn2wkrd8m1bgk" path="res://sfx/horn.mp3" id="5_ihh4l"]
+[ext_resource type="Texture2D" uid="uid://dgx6i4o31citu" path="res://dialogic/chiikawa/portraits/Screen Shot 2025-12-31 at 6.00.13 PM.png" id="1_ynlhb"]
+[ext_resource type="Script" uid="uid://cv5xwbm0rlkwr" path="res://imports/characters/VNCharacter.gd" id="2_o1ks2"]
+[ext_resource type="Resource" uid="uid://ddhdh1j06862s" path="res://imports/characters/chiikawa.tres" id="3_pipxh"]
+[ext_resource type="Script" uid="uid://cfiu61dpeu2g" path="res://imports/characters/button.gd" id="4_6y0hs"]
+[ext_resource type="AudioStream" uid="uid://l73y1wdq4d6r" path="res://sfx/horn.mp3" id="5_ihh4l"]
 
 [node name="Chiikawa" type="TextureRect"]
 anchors_preset = 13
 anchor_left = 0.5
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -303.0
-offset_top = 3.0
-offset_right = 314.14288
-offset_bottom = -5.0
+offset_left = -119.0
+offset_top = 183.0
+offset_right = 498.14282
+offset_bottom = 175.0
 grow_horizontal = 2
 grow_vertical = 2
+scale = Vector2(0.39, 0.39)
 texture = ExtResource("1_ynlhb")
 expand_mode = 3
 stretch_mode = 4
