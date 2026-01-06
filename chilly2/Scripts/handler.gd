@@ -1,7 +1,6 @@
 extends YadsHandler
 
-var dialogue_scene = preload("res://addons/yads/examples/example_dialogue_gui.tscn")
-
+var dialogue_scene = preload("res://addons/yads/examples/example_dialogue_gui_simple.tscn")
 
 
 func _get_dialogue_scene():
