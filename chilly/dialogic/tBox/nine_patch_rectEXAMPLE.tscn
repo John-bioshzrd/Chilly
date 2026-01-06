@@ -7,7 +7,7 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_o2nfj"]
 shader = ExtResource("1_6pthi")
 shader_parameter/star_texture = ExtResource("2_0o78a")
-shader_parameter/anim_speed = 5.0
+shader_parameter/anim_speed = 0.1
 
 [node name="NinePatchRect" type="NinePatchRect"]
 material = SubResource("ShaderMaterial_o2nfj")
@@ -15,6 +15,8 @@ offset_left = 124.0
 offset_top = 221.0
 offset_right = 1002.0
 offset_bottom = 614.0
+scale = Vector2(2.67, 2.67)
+size_flags_stretch_ratio = 0.0
 texture = ExtResource("3_6pthi")
 region_rect = Rect2(110.27887, 105.19869, 523.93744, 526.96606)
 patch_margin_left = 110

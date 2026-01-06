@@ -1,0 +1,16 @@
+[remap]
+
+importer="dialogue_manager"
+importer_version=15
+type="Resource"
+uid="uid://dej0vyl3daxvr"
+path="res://.godot/imported/chiikawa.dialogue-4a0ec9f1b2225b2c71a4d462a2314c99.tres"
+
+[deps]
+
+source_file="res://dMan/scripts/chiikawa.dialogue"
+dest_files=["res://.godot/imported/chiikawa.dialogue-4a0ec9f1b2225b2c71a4d462a2314c99.tres"]
+
+[params]
+
+defaults=true
