@@ -1,0 +1,2628 @@
+[gd_resource type="Resource" script_class="DialogicStyle" load_steps=60 format=4 uid="uid://c063c0443b8bu"]
+
+[sub_resource type="GDScript" id="GDScript_ym3nf"]
+script/source = "@tool
+extends DialogicLayoutBase
+
+## The default layout base scene.
+
+@export var canvas_layer: int = 1
+@export var follow_viewport: bool = false
+
+@export_subgroup(\"Global\")
+@export var global_bg_color: Color = Color(0, 0, 0, 0.9)
+@export var global_font_color: Color = Color(\"white\")
+@export_file('*.ttf', '*.tres') var global_font: String = \"\"
+@export var global_font_size: int = 18
+
+
+func _apply_export_overrides() -> void:
+	# apply layer
+	set(&'layer', canvas_layer)
+	set(&'follow_viewport_enabled', follow_viewport)
+
+
+"
+
+[sub_resource type="PackedScene" id="PackedScene_piow6"]
+_bundled = {
+"conn_count": 0,
+"conns": PackedInt32Array(),
+"editable_instances": [],
+"names": PackedStringArray("DefaultLayoutBase", "CanvasLayer", "script"),
+"node_count": 1,
+"node_paths": [],
+"nodes": PackedInt32Array(-1, -1, 1, 0, -1, 1, 2, 0, 0),
+"variants": [SubResource("GDScript_ym3nf")],
+"version": 3
+}
+
+[sub_resource type="GDScript" id="GDScript_lxpkx"]
+script/source = "@tool
+class_name DialogicStyleLayer
+extends Resource
+
+@export var scene: PackedScene = null
+@export var overrides := {}
+
+
+func _init(scene_path:Variant=null, scene_overrides:Dictionary={}):
+	if scene_path is PackedScene:
+		scene = scene_path
+	elif scene_path is String and ResourceLoader.exists(scene_path):
+		scene = load(scene_path)
+	overrides = scene_overrides
+
+
+func _to_string() -> String:
+	if scene:
+		return \"<Layer:\" + scene.resource_path + \" {\" + str(len(overrides)) + \" overrides} >\"
+	else:
+		return \"<Layer:no-scene>\"
+"
+
+[sub_resource type="Resource" id="Resource_56dgf"]
+script = SubResource("GDScript_lxpkx")
+scene = SubResource("PackedScene_piow6")
+
+[sub_resource type="GDScript" id="GDScript_aplk3"]
+script/source = "@tool
+extends DialogicLayoutLayer
+"
+
+[sub_resource type="GDScript" id="GDScript_221qh"]
+script/source = "class_name DialogicNode_BackgroundHolder
+extends ColorRect
+
+
+func _ready() -> void:
+	add_to_group('dialogic_background_holders')
+"
+
+[sub_resource type="PackedScene" id="PackedScene_quduv"]
+_bundled = {
+"conn_count": 0,
+"conns": PackedInt32Array(),
+"editable_instances": [],
+"names": PackedStringArray("BackgroundLayer", "Control", "layout_direction", "layout_mode", "anchors_preset", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "script", "DialogicNode_BackgroundHolder", "ColorRect", "layout_mode", "anchors_preset", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "color", "script"),
+"node_count": 2,
+"node_paths": [NodePath(".")],
+"nodes": PackedInt32Array(-1, -1, 1, 0, -1, 8, 2, 0, 3, 1, 4, 2, 5, 3, 6, 4, 7, 5, 8, 6, 9, 7, 0, 1073741824, 0, 11, 10, -1, 9, 12, 8, 13, 9, 14, 10, 15, 11, 16, 12, 17, 13, 18, 14, 19, 15, 20, 16, 0),
+"variants": [2, 3, 15, 1.0, 1.0, 2, 2, SubResource("GDScript_aplk3"), 1, 15, 1.0, 1.0, 2, 2, 2, Color(1, 1, 1, 0), SubResource("GDScript_221qh")],
+"version": 3
+}
+
+[sub_resource type="Resource" id="Resource_aidpj"]
+script = SubResource("GDScript_lxpkx")
+scene = SubResource("PackedScene_quduv")
+
+[sub_resource type="GDScript" id="GDScript_cfh5n"]
+script/source = "@tool
+extends DialogicLayoutLayer
+
+## A layer that allows showing 5 portraits, like in a visual novel.
+
+## The canvas layer that the portraits are on.
+@export var portrait_size_mode: DialogicNode_PortraitContainer.SizeModes = DialogicNode_PortraitContainer.SizeModes.FIT_SCALE_HEIGHT
+
+
+func _apply_export_overrides() -> void:
+	# apply portrait size
+	for child: DialogicNode_PortraitContainer in %Portraits.get_children():
+		child.size_mode = portrait_size_mode
+		child.update_portrait_transforms()
+"
+
+[sub_resource type="GDScript" id="GDScript_rcx8l"]
+script/source = "@tool
+class_name DialogicNode_PortraitContainer
+extends Control
+
+## Node that defines a position for dialogic portraits and how to display portraits at that position.
+
+enum PositionModes {
+	POSITION, ## This container can be joined/moved to with the Character Event
+	SPEAKER,  ## This container is joined/left automatically based on the speaker.
+	}
+
+@export var mode := PositionModes.POSITION
+
+@export_subgroup('Mode: Position')
+## The position this node corresponds to.
+@export var container_ids: PackedStringArray = [\"1\"]
+
+
+@export_subgroup('Mode: Speaker')
+## Can be used to use a different portrait.
+## E.g. \"Faces/\" would mean instead of \"happy\" it will use portrait \"Faces/happy\"
+@export var portrait_prefix := ''
+
+@export_subgroup('Portrait Placement')
+enum SizeModes {
+	KEEP, ## The height and width of the container have no effect, only the origin.
+	FIT_STRETCH, ## The portrait will be fitted into the container, ignoring it's aspect ratio and the character/portrait scale.
+	FIT_IGNORE_SCALE, ## The portrait will be fitted into the container, ignoring the character/portrait scale, but preserving the aspect ratio.
+	FIT_SCALE_HEIGHT ## Recommended. The portrait will be scaled to fit the container height. A character/portrait scale of 100% means 100% container height. Aspect ratio will be preserved.
+	}
+## Defines how to affect the scale of the portrait
+@export var size_mode: SizeModes = SizeModes.FIT_SCALE_HEIGHT :
+	set(mode):
+		size_mode = mode
+		_update_debug_portrait_transform()
+
+## If true, portraits will be mirrored in this position.
+@export var mirrored := false :
+	set(mirror):
+		mirrored = mirror
+		_update_debug_portrait_scene()
+
+
+@export_group('Origin', 'origin')
+enum OriginAnchors {TOP_LEFT, TOP_CENTER, TOP_RIGHT, LEFT_MIDDLE, CENTER, RIGHT_MIDDLE, BOTTOM_LEFT, BOTTOM_CENTER, BOTTOM_RIGHT}
+## The portrait will be placed relative to this point in the container.
+@export var origin_anchor: OriginAnchors = OriginAnchors.BOTTOM_CENTER :
+	set(anchor):
+		origin_anchor = anchor
+		_update_debug_origin()
+
+## An offset to apply to the origin. Rarely useful.
+@export var origin_offset := Vector2() :
+	set(offset):
+		origin_offset = offset
+		_update_debug_origin()
+
+enum PivotModes {AT_ORIGIN, PERCENTAGE, PIXELS}
+## Usually you want to rotate or scale around the portrait origin.
+## For the moments where that is not the case, set the mode to PERCENTAGE or PIXELS and use [member pivot_value].
+@export var pivot_mode: PivotModes = PivotModes.AT_ORIGIN
+## Only has an effect when [member pivot_mode] is not AT_ORIGIN. Meaning depends on whether [member pivot_mode] is PERCENTAGE or PIXELS.
+@export var pivot_value := Vector2()
+
+@export_group('Debug', 'debug')
+## A character that will be displayed in the editor, useful for getting the right size.
+@export var debug_character: DialogicCharacter = null:
+	set(character):
+		debug_character = character
+		_update_debug_portrait_scene()
+@export var debug_character_portrait := \"\":
+	set(portrait):
+		debug_character_portrait = portrait
+		_update_debug_portrait_scene()
+
+var debug_character_holder_node: Node2D = null
+var debug_character_scene_node: Node = null
+var debug_origin: Sprite2D = null
+var default_portrait_scene: String = DialogicUtil.get_module_path('Character').path_join(\"default_portrait.tscn\")
+# Used if no debug character is specified
+var default_debug_character := load(DialogicUtil.get_module_path('Character').path_join(\"preview_character.tres\"))
+
+var ignore_resize := false
+
+
+func _ready() -> void:
+	match mode:
+		PositionModes.POSITION:
+			add_to_group('dialogic_portrait_con_position')
+		PositionModes.SPEAKER:
+			add_to_group('dialogic_portrait_con_speaker')
+
+	if Engine.is_editor_hint():
+		resized.connect(_update_debug_origin)
+
+		if !ProjectSettings.get_setting('dialogic/portraits/default_portrait', '').is_empty():
+			default_portrait_scene = ProjectSettings.get_setting('dialogic/portraits/default_portrait', '')
+
+		debug_origin = Sprite2D.new()
+		add_child(debug_origin)
+		debug_origin.texture = load(\"res://addons/dialogic/Editor/Images/Dropdown/default.svg\")
+
+		_update_debug_origin()
+		_update_debug_portrait_scene()
+	else:
+		resized.connect(update_portrait_transforms)
+
+
+################################################################################
+##						MAIN METHODS
+################################################################################
+
+func update_portrait_transforms() -> void:
+	if ignore_resize:
+		return
+
+	match pivot_mode:
+		PivotModes.AT_ORIGIN:
+			pivot_offset = _get_origin_position()
+		PivotModes.PERCENTAGE:
+			pivot_offset = size*pivot_value
+		PivotModes.PIXELS:
+			pivot_offset = pivot_value
+
+	for child in get_children():
+		DialogicUtil.autoload().Portraits._update_character_transform(child)
+
+
+## Returns a Rect2 with the position as the position and the scale as the size.
+func get_local_portrait_transform(portrait_rect:Rect2, character_scale:=1.0) -> Rect2:
+	var transform := Rect2()
+	transform.position = _get_origin_position()
+
+	# Mode that ignores the containers size
+	if size_mode == SizeModes.KEEP:
+		transform.size = Vector2(1,1) * character_scale
+
+	# Mode that makes sure neither height nor width go out of container
+	elif size_mode == SizeModes.FIT_IGNORE_SCALE:
+		if size.x/size.y < portrait_rect.size.x/portrait_rect.size.y:
+			transform.size = Vector2(1,1) * size.x/portrait_rect.size.x
+		else:
+			transform.size = Vector2(1,1) * size.y/portrait_rect.size.y
+
+	# Mode that stretches the portrait to fill the whole container
+	elif size_mode == SizeModes.FIT_STRETCH:
+		transform.size = size/portrait_rect.size
+
+	# Mode that size the character so 100% size fills the height
+	elif size_mode == SizeModes.FIT_SCALE_HEIGHT:
+		transform.size = Vector2(1,1) * size.y / portrait_rect.size.y*character_scale
+
+	return transform
+
+
+## Returns the current origin position
+func _get_origin_position(rect_size = null) -> Vector2:
+	if rect_size == null:
+		rect_size = size
+	return rect_size * Vector2(origin_anchor%3 / 2.0, floor(origin_anchor/3.0) / 2.0) + origin_offset
+
+
+func is_container(id:Variant) -> bool:
+	return str(id) in container_ids
+
+#region DEBUG METHODS
+################################################################################
+### USE THIS TO DEBUG THE POSITIONS
+#func _draw():
+	#draw_rect(Rect2(Vector2(), size), Color(1, 0.3098039329052, 1), false, 2)
+	#draw_string(get_theme_default_font(),get_theme_default_font().get_string_size(container_ids[0], HORIZONTAL_ALIGNMENT_LEFT, 1, get_theme_default_font_size()) , container_ids[0], HORIZONTAL_ALIGNMENT_CENTER)
+#
+#func _process(delta:float) -> void:
+	#queue_redraw()
+
+
+## Loads the debug_character with the debug_character_portrait
+## Creates a holder node and applies mirror
+func _update_debug_portrait_scene() -> void:
+	if !Engine.is_editor_hint():
+		return
+	if is_instance_valid(debug_character_holder_node):
+		for child in get_children():
+			if child != debug_origin:
+				child.free()
+
+	# Get character
+	var character := _get_debug_character()
+	if not character is DialogicCharacter or character.portraits.is_empty():
+		return
+
+	# Determine portrait
+	var debug_portrait := debug_character_portrait
+	if debug_portrait.is_empty():
+		debug_portrait = character.default_portrait
+	if mode == PositionModes.SPEAKER and !portrait_prefix.is_empty():
+		if portrait_prefix+debug_portrait in character.portraits:
+			debug_portrait = portrait_prefix+debug_portrait
+	if not debug_portrait in character.portraits:
+		debug_portrait = character.default_portrait
+
+	var portrait_info: Dictionary = character.get_portrait_info(debug_portrait)
+
+	# Determine scene
+	var portrait_scene_path: String = portrait_info.get('scene', default_portrait_scene)
+	if portrait_scene_path.is_empty():
+		portrait_scene_path = default_portrait_scene
+
+	debug_character_scene_node = load(portrait_scene_path).instantiate()
+
+	if !is_instance_valid(debug_character_scene_node):
+		return
+
+	# Load portrait
+	DialogicUtil.apply_scene_export_overrides(debug_character_scene_node, character.portraits[debug_portrait].get('export_overrides', {}))
+	debug_character_scene_node._update_portrait(character, debug_portrait)
+
+	# Add character node
+	if !is_instance_valid(debug_character_holder_node):
+		debug_character_holder_node = Node2D.new()
+		add_child(debug_character_holder_node)
+
+	# Add portrait node
+	debug_character_holder_node.add_child(debug_character_scene_node)
+	move_child(debug_character_holder_node, 0)
+	debug_character_scene_node._set_mirror(character.mirror != mirrored != portrait_info.get('mirror', false))
+
+	_update_debug_portrait_transform()
+
+
+## Set's the size and position of the holder and scene node
+## according to the size_mode
+func _update_debug_portrait_transform() -> void:
+	if !Engine.is_editor_hint() or !is_instance_valid(debug_character_scene_node) or !is_instance_valid(debug_origin):
+		return
+	var character := _get_debug_character()
+	var portrait_info := character.get_portrait_info(debug_character_portrait)
+	var transform := get_local_portrait_transform(debug_character_scene_node._get_covered_rect(), character.scale*portrait_info.get('scale', 1))
+	debug_character_holder_node.position = transform.position
+	debug_character_scene_node.position = portrait_info.get('offset', Vector2())+character.offset
+
+	debug_character_holder_node.scale = transform.size
+
+
+## Updates the debug origins position. Also calls _update_debug_portrait_transform()
+func _update_debug_origin() -> void:
+	if !Engine.is_editor_hint() or !is_instance_valid(debug_origin):
+		return
+	debug_origin.position = _get_origin_position()
+	_update_debug_portrait_transform()
+
+
+
+## Returns the debug character or the default debug character
+func _get_debug_character() -> DialogicCharacter:
+	return debug_character if debug_character != null else default_debug_character
+
+#endregion
+"
+
+[sub_resource type="PackedScene" id="PackedScene_3re64"]
+_bundled = {
+"conn_count": 0,
+"conns": PackedInt32Array(),
+"editable_instances": [],
+"names": PackedStringArray("VN_PortraitLayer", "Control", "layout_mode", "anchors_preset", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "script", "Portraits", "Control", "unique_name_in_owner", "layout_mode", "anchors_preset", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "DialogicNode_PortraitContainer1", "Control", "layout_mode", "anchor_right", "anchor_bottom", "offset_right", "grow_vertical", "pivot_offset", "mouse_filter", "script", "container_ids", "metadata/_edit_use_anchors_", "DialogicNode_PortraitContainer2", "Control", "layout_mode", "anchor_left", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "script", "container_ids", "metadata/_edit_use_anchors_", "DialogicNode_PortraitContainer3", "Control", "layout_mode", "anchor_left", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "script", "container_ids", "metadata/_edit_use_anchors_", "DialogicNode_PortraitContainer4", "Control", "layout_mode", "anchor_left", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "script", "container_ids", "metadata/_edit_use_anchors_", "DialogicNode_PortraitContainer5", "Control", "layout_mode", "anchor_left", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "script", "container_ids", "metadata/_edit_use_anchors_"),
+"node_count": 7,
+"node_paths": [NodePath("."), NodePath("./Portraits"), NodePath("./Portraits"), NodePath("./Portraits"), NodePath("./Portraits"), NodePath("./Portraits")],
+"nodes": PackedInt32Array(-1, -1, 1, 0, -1, 8, 2, 0, 3, 1, 4, 2, 5, 3, 6, 4, 7, 5, 8, 6, 9, 7, 0, 1073741824, 0, 11, 10, -1, 8, 12, 8, 13, 9, 14, 10, 15, 11, 16, 12, 17, 13, 18, 14, 19, 15, 0, 1073741825, 0, 21, 20, -1, 10, 22, 16, 23, 17, 24, 18, 25, 19, 26, 20, 27, 21, 28, 22, 29, 23, 30, 24, 31, 25, 0, 1073741826, 0, 33, 32, -1, 10, 34, 26, 35, 27, 36, 28, 37, 29, 38, 30, 39, 31, 40, 32, 41, 33, 42, 34, 43, 35, 0, 1073741827, 0, 45, 44, -1, 10, 46, 36, 47, 37, 48, 38, 49, 39, 50, 40, 51, 41, 52, 42, 53, 43, 54, 44, 55, 45, 0, 1073741828, 0, 57, 56, -1, 10, 58, 46, 59, 47, 60, 48, 61, 49, 62, 50, 63, 51, 64, 52, 65, 53, 66, 54, 67, 55, 0, 1073741829, 0, 69, 68, -1, 10, 70, 56, 71, 57, 72, 58, 73, 59, 74, 60, 75, 61, 76, 62, 77, 63, 78, 64, 79, 65, 0),
+"variants": [3, 15, 1.0, 1.0, 2, 2, 2, SubResource("GDScript_cfh5n"), true, 1, 15, 1.0, 1.0, 2, 2, 2, 1, 0.2, 1.0, -1.52588e-05, 2, Vector2(115.2, 648), 2, SubResource("GDScript_rcx8l"), PackedStringArray("leftmost", "0"), true, 1, 0.2, 0.4, 1.0, 2, 2, 2, SubResource("GDScript_rcx8l"), PackedStringArray("left", "1"), true, 1, 0.4, 0.6, 1.0, 2, 2, 2, SubResource("GDScript_rcx8l"), PackedStringArray("center", "middle", "2"), true, 1, 0.6, 0.8, 1.0, 2, 2, 2, SubResource("GDScript_rcx8l"), PackedStringArray("right", "3"), true, 1, 0.8, 1.0, 1.0, 2, 2, 2, SubResource("GDScript_rcx8l"), PackedStringArray("rightmost", "4"), true],
+"version": 3
+}
+
+[sub_resource type="Resource" id="Resource_0nmc6"]
+script = SubResource("GDScript_lxpkx")
+scene = SubResource("PackedScene_3re64")
+
+[sub_resource type="GDScript" id="GDScript_1jws1"]
+script/source = "@tool
+extends DialogicLayoutLayer
+
+## A layer that holds a full-screen input catcher.
+"
+
+[sub_resource type="GDScript" id="GDScript_sq8el"]
+script/source = "class_name DialogicNode_Input
+extends Control
+
+## A node that handles mouse input. This allows limiting mouse input to a
+## specific region and avoiding conflicts with other UI elements.
+## If no Input node is used, the input subsystem will handle mouse input instead.
+
+func _ready() -> void:
+	add_to_group('dialogic_input')
+	gui_input.connect(_on_gui_input)
+
+
+func _input(_event: InputEvent) -> void:
+	if Input.is_action_pressed(ProjectSettings.get_setting('dialogic/text/input_action', 'dialogic_default_action')):
+		mouse_filter = Control.MOUSE_FILTER_STOP
+	else:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+func _on_gui_input(event:InputEvent) -> void:
+	DialogicUtil.autoload().Inputs.handle_node_gui_input(event)
+"
+
+[sub_resource type="PackedScene" id="PackedScene_mp0sv"]
+_bundled = {
+"conn_count": 0,
+"conns": PackedInt32Array(),
+"editable_instances": [],
+"names": PackedStringArray("FullAdvanceInputLayer", "Control", "layout_mode", "anchors_preset", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "script", "DialogicNode_Input", "Control", "layout_mode", "anchors_preset", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "script"),
+"node_count": 2,
+"node_paths": [NodePath(".")],
+"nodes": PackedInt32Array(-1, -1, 1, 0, -1, 8, 2, 0, 3, 1, 4, 2, 5, 3, 6, 4, 7, 5, 8, 6, 9, 7, 0, 1073741824, 0, 11, 10, -1, 8, 12, 8, 13, 9, 14, 10, 15, 11, 16, 12, 17, 13, 18, 14, 19, 15, 0),
+"variants": [3, 15, 1.0, 1.0, 2, 2, 2, SubResource("GDScript_1jws1"), 1, 15, 1.0, 1.0, 2, 2, 1, SubResource("GDScript_sq8el")],
+"version": 3
+}
+
+[sub_resource type="Resource" id="Resource_1y1i4"]
+script = SubResource("GDScript_lxpkx")
+scene = SubResource("PackedScene_mp0sv")
+
+[sub_resource type="GDScript" id="GDScript_627c3"]
+script/source = "@tool
+extends DialogicLayoutLayer
+## This layer's scene file contains following nodes:
+## - a dialog_text node
+## - a name_label node
+## - a next_indicator node
+## - a type_sound node
+##
+## As well as custom:
+## - animations
+## - auto-advance progress indicator
+##
+## If you want to customize this layer, here is a little rundown of this layer:
+## The Layer Settings are divided into the `@export_group`s below.
+## They get applied in [method _apply_export_overrides].
+## Each `@export_group` has its own method to apply the settings to the scene.
+## If you want to change a specific part inside the scene, you can simply
+## remove or add # (commenting) to the method line.
+
+
+
+enum Alignments {LEFT, CENTER, RIGHT}
+
+enum AnimationsIn {NONE, POP_IN, FADE_UP}
+enum AnimationsOut {NONE, POP_OUT, FADE_DOWN}
+enum AnimationsNewText {NONE, WIGGLE}
+
+@export_group(\"Text\")
+
+@export_subgroup(\"Alignment & Size\")
+@export var text_alignment: Alignments= Alignments.LEFT
+@export var text_use_global_size: bool = true
+@export var text_size: int = 15
+
+@export_subgroup(\"Color\")
+@export var text_use_global_color: bool = true
+@export var text_custom_color: Color = Color.WHITE
+
+@export_subgroup('Font')
+@export var text_use_global_font: bool = true
+@export_file('*.ttf', '*.tres') var normal_font: String = \"\"
+@export_file('*.ttf', '*.tres') var bold_font: String = \"\"
+@export_file('*.ttf', '*.tres') var italics_font: String = \"\"
+@export_file('*.ttf', '*.tres') var bold_italics_font: String = \"\"
+
+
+@export_group(\"Box\")
+
+@export_subgroup(\"Panel\")
+@export_file(\"*.tres\") var box_panel: String = this_folder.path_join(\"vn_textbox_default_panel.tres\")
+
+@export_subgroup(\"Color\")
+@export var box_color_use_global: bool = true
+@export var box_color_custom: Color = Color.BLACK
+
+@export_subgroup(\"Size & Position\")
+@export var box_size: Vector2 = Vector2(550, 110)
+@export var box_margin_bottom: int = 15
+
+@export_subgroup(\"Animation\")
+@export var box_animation_in: AnimationsIn = AnimationsIn.FADE_UP
+@export var box_animation_out: AnimationsOut = AnimationsOut.FADE_DOWN
+@export var box_animation_new_text: AnimationsNewText = AnimationsNewText.NONE
+
+
+@export_group(\"Name Label\")
+
+@export_subgroup('Color')
+@export var name_label_use_global_color: bool= true
+@export var name_label_use_character_color: bool = true
+@export var name_label_custom_color: Color = Color.WHITE
+
+@export_subgroup('Font')
+@export var name_label_use_global_font: bool = true
+@export_file('*.ttf', '*.tres') var name_label_font: String = \"\"
+@export var name_label_use_global_font_size: bool = true
+@export var name_label_custom_font_size: int = 15
+
+@export_subgroup('Box')
+@export_file(\"*.tres\") var name_label_box_panel: String = this_folder.path_join(\"vn_textbox_name_label_panel.tres\")
+@export var name_label_box_use_global_color: bool = true
+@export var name_label_box_modulate: Color = box_color_custom
+
+@export_subgroup('Alignment')
+@export var name_label_alignment: Alignments = Alignments.LEFT
+@export var name_label_box_offset: Vector2 = Vector2.ZERO
+
+
+@export_group(\"Indicators\")
+
+@export_subgroup(\"Next Indicator\")
+@export var next_indicator_enabled: bool = true
+@export var next_indicator_show_on_questions: bool = true
+@export var next_indicator_show_on_autoadvance: bool = false
+@export_enum('bounce', 'blink', 'none') var next_indicator_animation: int = 0
+@export_file(\"*.png\",\"*.svg\",\"*.tres\") var next_indicator_texture: String = ''
+@export var next_indicator_size: Vector2 = Vector2(25,25)
+
+@export_subgroup(\"Autoadvance\")
+@export var autoadvance_progressbar: bool = true
+
+
+@export_group('Sounds')
+
+@export_subgroup('Typing Sounds')
+@export var typing_sounds_enabled: bool = true
+@export var typing_sounds_mode: DialogicNode_TypeSounds.Modes = DialogicNode_TypeSounds.Modes.INTERRUPT
+@export_dir var typing_sounds_sounds_folder: String = \"res://addons/dialogic/Example Assets/sound-effects/\"
+@export_file(\"*.wav\", \"*.ogg\", \"*.mp3\") var typing_sounds_end_sound: String = \"\"
+@export_range(1, 999, 1) var typing_sounds_every_nths_character: int = 1
+@export_range(0.01, 4, 0.01) var typing_sounds_pitch: float = 1.0
+@export_range(0.0, 3.0) var typing_sounds_pitch_variance: float = 0.0
+@export_range(-80, 24, 0.01) var typing_sounds_volume: float = -10
+@export_range(0.0, 10) var typing_sounds_volume_variance: float = 0.0
+@export var typing_sounds_ignore_characters: String = \" .,!?\"
+
+
+func _apply_export_overrides() -> void:
+	if !is_inside_tree():
+		await ready
+
+	## FONT SETTINGS
+	_apply_text_settings()
+
+
+	## BOX SETTINGS
+	_apply_box_settings()
+
+	## BOX ANIMATIONS
+	_apply_box_animations_settings()
+
+	## NAME LABEL SETTINGS
+	_apply_name_label_settings()
+
+	## NEXT INDICATOR SETTINGS
+	_apply_indicator_settings()
+
+	## OTHER
+	var progress_bar: ProgressBar = %AutoAdvanceProgressbar
+	progress_bar.set(&'enabled', autoadvance_progressbar)
+
+	#### SOUNDS
+
+	## TYPING SOUNDS
+	_apply_sounds_settings()
+
+
+## Applies all text box settings to the scene.
+## Except the box animations.
+func _apply_box_settings() -> void:
+	var dialog_text_panel: PanelContainer = %DialogTextPanel
+	if ResourceLoader.exists(box_panel):
+		dialog_text_panel.add_theme_stylebox_override(&'panel', load(box_panel) as StyleBox)
+
+	if box_color_use_global:
+		dialog_text_panel.self_modulate = get_global_setting(&'bg_color', box_color_custom)
+	else:
+		dialog_text_panel.self_modulate = box_color_custom
+
+	var sizer: Control = %Sizer
+	sizer.size = box_size
+	sizer.position = box_size * Vector2(-0.5, -1)+Vector2(0, -box_margin_bottom)
+
+
+## Applies box animations settings to the scene.
+func _apply_box_animations_settings() -> void:
+	var animations: AnimationPlayer = %Animations
+	animations.set(&'animation_in', box_animation_in)
+	animations.set(&'animation_out', box_animation_out)
+	animations.set(&'animation_new_text', box_animation_new_text)
+
+
+## Applies all name label settings to the scene.
+func _apply_name_label_settings() -> void:
+	var name_label: DialogicNode_NameLabel = %DialogicNode_NameLabel
+
+	if name_label_use_global_font_size:
+		name_label.add_theme_font_size_override(&\"font_size\", get_global_setting(&'font_size', name_label_custom_font_size) as int)
+	else:
+		name_label.add_theme_font_size_override(&\"font_size\", name_label_custom_font_size)
+
+	if name_label_use_global_font and get_global_setting(&'font', false):
+		name_label.add_theme_font_override(&'font', load(get_global_setting(&'font', '') as String) as Font)
+	elif not name_label_font.is_empty():
+		name_label.add_theme_font_override(&'font', load(name_label_font) as Font)
+
+	if name_label_use_global_color:
+		name_label.add_theme_color_override(&\"font_color\", get_global_setting(&'font_color', name_label_custom_color) as Color)
+	else:
+		name_label.add_theme_color_override(&\"font_color\", name_label_custom_color)
+
+	name_label.use_character_color = name_label_use_character_color
+
+	var name_label_panel: PanelContainer = %NameLabelPanel
+	if ResourceLoader.exists(name_label_box_panel):
+		name_label_panel.add_theme_stylebox_override(&'panel', load(name_label_box_panel) as StyleBox)
+	else:
+		name_label_panel.add_theme_stylebox_override(&'panel', load(this_folder.path_join(\"vn_textbox_name_label_panel.tres\")) as StyleBox)
+
+	if name_label_box_use_global_color:
+		name_label_panel.self_modulate = get_global_setting(&'bg_color', name_label_box_modulate)
+	else:
+		name_label_panel.self_modulate = name_label_box_modulate
+	var dialog_text_panel: PanelContainer = %DialogTextPanel
+	name_label_panel.position = name_label_box_offset+Vector2(0, -40)
+	name_label_panel.position -= Vector2(
+		dialog_text_panel.get_theme_stylebox(&'panel', &'PanelContainer').content_margin_left,
+		dialog_text_panel.get_theme_stylebox(&'panel', &'PanelContainer').content_margin_top)
+	name_label_panel.anchor_left = name_label_alignment/2.0
+	name_label_panel.anchor_right = name_label_alignment/2.0
+	name_label_panel.grow_horizontal = [1, 2, 0][name_label_alignment]
+
+
+## Applies all text settings to the scene.
+func _apply_text_settings() -> void:
+	var dialog_text: DialogicNode_DialogText = %DialogicNode_DialogText
+	dialog_text.alignment = text_alignment as DialogicNode_DialogText.Alignment
+
+	if text_use_global_size:
+		text_size = get_global_setting(&'font_size', text_size)
+	dialog_text.add_theme_font_size_override(&\"normal_font_size\", text_size)
+	dialog_text.add_theme_font_size_override(&\"bold_font_size\", text_size)
+	dialog_text.add_theme_font_size_override(&\"italics_font_size\", text_size)
+	dialog_text.add_theme_font_size_override(&\"bold_italics_font_size\", text_size)
+
+	if text_use_global_color:
+		dialog_text.add_theme_color_override(&\"default_color\", get_global_setting(&'font_color', text_custom_color) as Color)
+	else:
+		dialog_text.add_theme_color_override(&\"default_color\", text_custom_color)
+
+	if text_use_global_font and get_global_setting(&'font', false):
+		dialog_text.add_theme_font_override(&\"normal_font\", load(get_global_setting(&'font', '') as String) as Font)
+	elif !normal_font.is_empty():
+		dialog_text.add_theme_font_override(&\"normal_font\", load(normal_font) as Font)
+	if !bold_font.is_empty():
+		dialog_text.add_theme_font_override(&\"bold_font\", load(bold_font) as Font)
+	if !italics_font.is_empty():
+		dialog_text.add_theme_font_override(&\"italics_font\", load(italics_font) as Font)
+	if !bold_italics_font.is_empty():
+		dialog_text.add_theme_font_override(&\"bold_italics_font\", load(bold_italics_font) as Font)
+
+
+## Applies all indicator settings to the scene.
+func _apply_indicator_settings() -> void:
+	var next_indicator: DialogicNode_NextIndicator = %NextIndicator
+	next_indicator.enabled = next_indicator_enabled
+
+	if next_indicator_enabled:
+		next_indicator.animation = next_indicator_animation as DialogicNode_NextIndicator.Animations
+		if ResourceLoader.exists(next_indicator_texture):
+			next_indicator.texture = load(next_indicator_texture)
+		next_indicator.show_on_questions = next_indicator_show_on_questions
+		next_indicator.show_on_autoadvance = next_indicator_show_on_autoadvance
+		next_indicator.texture_size = next_indicator_size
+
+
+## Applies all sound settings to the scene.
+func _apply_sounds_settings() -> void:
+	var type_sounds: DialogicNode_TypeSounds = %DialogicNode_TypeSounds
+	type_sounds.enabled = typing_sounds_enabled
+	type_sounds.mode = typing_sounds_mode
+
+	if not typing_sounds_sounds_folder.is_empty():
+		type_sounds.sounds = DialogicNode_TypeSounds.load_sounds_from_path(typing_sounds_sounds_folder)
+	else:
+		type_sounds.sounds.clear()
+
+	if not typing_sounds_end_sound.is_empty():
+		type_sounds.end_sound = load(typing_sounds_end_sound)
+	else:
+		type_sounds.end_sound = null
+
+	type_sounds.play_every_character = typing_sounds_every_nths_character
+	type_sounds.base_pitch = typing_sounds_pitch
+	type_sounds.base_volume = typing_sounds_volume
+	type_sounds.pitch_variance = typing_sounds_pitch_variance
+	type_sounds.volume_variance = typing_sounds_volume_variance
+	type_sounds.ignore_characters = typing_sounds_ignore_characters
+"
+
+[sub_resource type="Animation" id="Animation_au0a2"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Anchor/AnimationParent:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Anchor/AnimationParent:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Anchor/AnimationParent:scale")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(1, 1)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Anchor/AnimationParent:modulate")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 1, 1)]
+}
+tracks/4/type = "bezier"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Anchor/AnimationParent/Sizer/DialogTextPanel:rotation")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"handle_modes": PackedInt32Array(0),
+"points": PackedFloat32Array(0, -0.25, 0, 0.25, 0),
+"times": PackedFloat32Array(0)
+}
+
+[sub_resource type="Animation" id="Animation_6kbwc"]
+resource_name = "new_text"
+length = 0.4
+tracks/0/type = "bezier"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Anchor/AnimationParent/Sizer/DialogTextPanel:rotation")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"handle_modes": PackedInt32Array(3, 3, 3, 3, 3),
+"points": PackedFloat32Array(0, -0.025, 0, 0.025, 0, 0.005, -0.025, 0, 0.025, 0, -0.005, -0.025, 0, 0.025, 0, 0.005, -0.025, 0, 0.025, 0, 0, -0.025, 0, 0.025, 0),
+"times": PackedFloat32Array(0, 0.1, 0.2, 0.3, 0.4)
+}
+
+[sub_resource type="Animation" id="Animation_g6k55"]
+resource_name = "textbox_fade_up"
+length = 0.7
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Anchor/AnimationParent:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.3, 0.7),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(0, 50), Vector2(0, 19.6793), Vector2(0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Anchor/AnimationParent:modulate")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0.1, 0.6),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 0), Color(1, 1, 1, 1)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Anchor/AnimationParent:rotation")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [0.0]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Anchor/AnimationParent:scale")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(1, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_htbgc"]
+resource_name = "textbox_pop"
+length = 0.3
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Anchor/AnimationParent:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Anchor/AnimationParent:rotation")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [-0.0899883, 0.0258223, 0.0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Anchor/AnimationParent:scale")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.2, 0.3),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector2(0.793957, 0.778082), Vector2(0.937299, 1.14248), Vector2(1, 1)]
+}
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Anchor/AnimationParent:modulate")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.3),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 0), Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_c14kh"]
+_data = {
+&"RESET": SubResource("Animation_au0a2"),
+&"new_text": SubResource("Animation_6kbwc"),
+&"textbox_fade_up": SubResource("Animation_g6k55"),
+&"textbox_pop": SubResource("Animation_htbgc")
+}
+
+[sub_resource type="GDScript" id="GDScript_dqwdg"]
+script/source = "extends AnimationPlayer
+
+## A custom script/node that adds some animations to the textbox.
+
+# Careful: Sync these with the ones in the root script!
+enum AnimationsIn {NONE, POP_IN, FADE_UP}
+enum AnimationsOut {NONE, POP_OUT, FADE_DOWN}
+enum AnimationsNewText {NONE, WIGGLE}
+
+var animation_in: AnimationsIn
+var animation_out: AnimationsOut
+var animation_new_text: AnimationsNewText
+
+var full_clear := true
+
+
+func get_text_panel() -> PanelContainer:
+	return %DialogTextPanel
+
+
+func get_dialog() -> DialogicNode_DialogText:
+	return %DialogicNode_DialogText
+
+
+func _ready() -> void:
+	var text_system: Node = DialogicUtil.autoload().get(&'Text')
+	text_system.connect(&'animation_textbox_hide', _on_textbox_hide)
+	text_system.connect(&'animation_textbox_show', _on_textbox_show)
+	text_system.connect(&'animation_textbox_new_text', _on_textbox_new_text)
+	text_system.connect(&'about_to_show_text', _on_about_to_show_text)
+	var animation_system: Node = DialogicUtil.autoload().get(&'Animations')
+	animation_system.connect(&'animation_interrupted', _on_animation_interrupted)
+
+
+func _on_textbox_show() -> void:
+	if animation_in == AnimationsIn.NONE:
+		return
+	play('RESET')
+	var animation_system: Node = DialogicUtil.autoload().get(&'Animations')
+	animation_system.call(&'start_animating')
+	get_text_panel().get_parent().get_parent().set(&'modulate', Color.TRANSPARENT)
+	get_dialog().text = \"\"
+	match animation_in:
+		AnimationsIn.POP_IN:
+			play(\"textbox_pop\")
+		AnimationsIn.FADE_UP:
+			play(\"textbox_fade_up\")
+	if not animation_finished.is_connected(Callable(animation_system, &'animation_finished')):
+		animation_finished.connect(Callable(animation_system, &'animation_finished'), CONNECT_ONE_SHOT)
+
+
+func _on_textbox_hide() -> void:
+	if animation_out == AnimationsOut.NONE:
+		return
+	play('RESET')
+	var animation_system: Node = DialogicUtil.autoload().get(&'Animations')
+	animation_system.call(&'start_animating')
+	match animation_out:
+		AnimationsOut.POP_OUT:
+			play_backwards(\"textbox_pop\")
+		AnimationsOut.FADE_DOWN:
+			play_backwards(\"textbox_fade_up\")
+
+	if not animation_finished.is_connected(Callable(animation_system, &'animation_finished')):
+		animation_finished.connect(Callable(animation_system, &'animation_finished'), CONNECT_ONE_SHOT)
+
+
+func _on_about_to_show_text(info:Dictionary) -> void:
+	full_clear = !info.append
+
+
+func _on_textbox_new_text() -> void:
+	if DialogicUtil.autoload().Inputs.auto_skip.enabled:
+		return
+
+	if animation_new_text == AnimationsNewText.NONE:
+		return
+
+	var animation_system: Node = DialogicUtil.autoload().get(&'Animations')
+	animation_system.call(&'start_animating')
+	if full_clear:
+		get_dialog().text = \"\"
+	match animation_new_text:
+		AnimationsNewText.WIGGLE:
+			play(\"new_text\")
+
+			if not animation_finished.is_connected(Callable(animation_system, &'animation_finished')):
+				animation_finished.connect(Callable(animation_system, &'animation_finished'), CONNECT_ONE_SHOT)
+
+
+func _on_animation_interrupted() -> void:
+	if is_playing():
+		stop()
+"
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vri5o"]
+content_margin_left = 15.0
+content_margin_top = 15.0
+content_margin_right = 15.0
+content_margin_bottom = 15.0
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="GDScript" id="GDScript_roolt"]
+script/source = "@icon(\"node_dialog_text_icon.svg\")
+class_name DialogicNode_DialogText
+extends RichTextLabel
+
+## Dialogic node that can reveal text at a given (changeable speed).
+
+signal started_revealing_text()
+signal continued_revealing_text(new_character : String)
+signal finished_revealing_text()
+enum Alignment {LEFT, CENTER, RIGHT}
+
+@export var enabled := true
+@export var alignment := Alignment.LEFT
+@export var textbox_root: Node = self
+
+@export var hide_when_empty := false
+@export var start_hidden := true
+
+var revealing := false
+var base_visible_characters := 0
+
+# The used speed per revealed character.
+# May be overwritten when syncing reveal speed to voice.
+var active_speed: float = 0.01
+
+var speed_counter: float = 0
+
+func _set(property: StringName, what: Variant) -> bool:
+	if property == 'text' and typeof(what) == TYPE_STRING:
+
+		text = what
+
+		if hide_when_empty:
+			textbox_root.visible = !what.is_empty()
+
+		return true
+	return false
+
+
+func _ready() -> void:
+	# add to necessary
+	add_to_group('dialogic_dialog_text')
+	meta_hover_ended.connect(_on_meta_hover_ended)
+	meta_hover_started.connect(_on_meta_hover_started)
+	meta_clicked.connect(_on_meta_clicked)
+	gui_input.connect(on_gui_input)
+	bbcode_enabled = true
+	if textbox_root == null:
+		textbox_root = self
+
+	if start_hidden:
+		textbox_root.hide()
+	text = \"\"
+
+	var custom_bbcode_effects: Array = ProjectSettings.get_setting(\"dialogic/text/custom_bbcode_effects\", \"\").split(\",\", false)
+	for i in custom_bbcode_effects:
+		var x : Resource = load(i.strip_edges())
+		if x is RichTextEffect:
+			custom_effects.append(x)
+
+
+# this is called by the DialogicGameHandler to set text
+
+func reveal_text(_text: String, keep_previous:=false) -> void:
+	if !enabled:
+		return
+	show()
+
+	custom_fx_reset()
+
+	if !keep_previous:
+		text = _text
+		base_visible_characters = 0
+
+		if alignment == Alignment.CENTER:
+			text = '[center]'+text
+		elif alignment == Alignment.RIGHT:
+			text = '[right]'+text
+		visible_characters = 0
+
+	else:
+		base_visible_characters = len(text)
+		visible_characters = len(get_parsed_text())
+		custom_fx_update()
+		text = text + _text
+
+		# If Auto-Skip is enabled and we append the text (keep_previous),
+		# we can skip revealing the text and just show it all at once.
+		if DialogicUtil.autoload().Inputs.auto_skip.enabled:
+			visible_characters = 1
+			return
+
+	revealing = true
+	speed_counter = 0
+	started_revealing_text.emit()
+
+
+func set_speed(delay_per_character:float) -> void:
+	if DialogicUtil.autoload().Text.is_text_voice_synced() and DialogicUtil.autoload().Voice.is_running():
+		var total_characters := get_total_character_count() as float
+		var remaining_time: float = DialogicUtil.autoload().Voice.get_remaining_time()
+		var synced_speed :=  remaining_time / total_characters
+		active_speed = synced_speed
+
+	else:
+		active_speed = delay_per_character
+
+
+## Reveals one additional character.
+func continue_reveal() -> void:
+	if visible_characters <= get_total_character_count():
+		revealing = false
+
+		var current_index := visible_characters - base_visible_characters
+		await DialogicUtil.autoload().Text.execute_effects(current_index, self, false)
+
+		if visible_characters == -1:
+			return
+
+		revealing = true
+		visible_characters += 1
+
+		if visible_characters > -1 and visible_characters <= len(get_parsed_text()):
+			continued_revealing_text.emit(get_parsed_text()[visible_characters-1])
+
+		custom_fx_update()
+	else:
+		finish_text(true)
+		# if the text finished organically, add a small input block
+		# this prevents accidental skipping when you expected the text to be longer
+		DialogicUtil.autoload().Inputs.block_input(ProjectSettings.get_setting('dialogic/text/advance_delay', 0.1))
+
+
+## Reveals the entire text instantly.
+func finish_text(is_organic := false) -> void:
+	visible_ratio = 1
+	custom_fx_update()
+	if not is_organic:
+		custom_fx_skip()
+	DialogicUtil.autoload().Text.execute_effects(-1, self, true)
+	revealing = false
+	DialogicUtil.autoload().current_state = DialogicGameHandler.States.IDLE
+
+	finished_revealing_text.emit()
+
+
+## Checks if the next character in the text can be revealed.
+func _process(delta: float) -> void:
+	if !revealing or DialogicUtil.autoload().paused:
+		return
+
+	speed_counter += delta
+
+	while speed_counter > active_speed and revealing and !DialogicUtil.autoload().paused:
+		speed_counter -= active_speed
+		continue_reveal()
+
+
+
+func _on_meta_hover_started(_meta:Variant) -> void:
+	DialogicUtil.autoload().Inputs.action_was_consumed = true
+
+func _on_meta_hover_ended(_meta:Variant) -> void:
+	DialogicUtil.autoload().Inputs.action_was_consumed = false
+
+func _on_meta_clicked(_meta:Variant) -> void:
+	DialogicUtil.autoload().Inputs.action_was_consumed = true
+
+
+## Handle mouse input
+func on_gui_input(event:InputEvent) -> void:
+	DialogicUtil.autoload().Inputs.handle_node_gui_input(event)
+
+
+func custom_fx_update() -> void:
+	for effect in custom_effects:
+		if \"visible_characters\" in effect:
+			effect.visible_characters = visible_characters
+
+
+func custom_fx_reset() -> void:
+	for effect in custom_effects:
+		if effect.has_method(\"reset\"):
+			effect.reset()
+
+
+func custom_fx_skip() -> void:
+	for effect in custom_effects:
+		if effect.has_method(\"skip\"):
+			effect.skip()
+"
+
+[sub_resource type="GDScript" id="GDScript_4x6ul"]
+script/source = "@tool
+class_name DialogicNode_TypeSounds
+extends AudioStreamPlayer
+
+## Node that allows playing sounds when text characters are revealed.
+## Should be the child of a DialogicNode_DialogText node!
+
+## Usefull if you want to change the sounds of different node's sounds
+@export var enabled := true
+enum Modes {INTERRUPT, OVERLAP, AWAIT}
+## If true, interrupts the current sound to play a new one
+@export var mode := Modes.INTERRUPT
+## Array of sounds. Will pick a random one each time.
+@export var sounds: Array[AudioStream] = []
+## A sound to be played as the last sound.
+@export var end_sound:AudioStream
+## Determines how many characters are between each sound. Default is 1 for playing it every character.
+@export var play_every_character  := 1
+## Allows changing the pitch by a random value from (pitch - pitch_variance) to (pitch + pitch_variance)
+@export_range(0, 3, 0.01) var pitch_variance := 0.0
+## Allows changing the volume by a random value from (volume - volume_variance) to (volume + volume_variance)
+@export_range(0, 10, 0.01) var volume_variance := 0.0
+## Characters that don't increase the 'characters_since_last_sound' variable, useful for the space or fullstop
+@export var ignore_characters: String = ' .,'
+
+var characters_since_last_sound: int = 0
+var base_pitch: float = pitch_scale
+var base_volume: float = volume_db
+var RNG := RandomNumberGenerator.new()
+
+var current_overwrite_data := {}
+
+func _ready() -> void:
+	# add to necessary group
+	add_to_group('dialogic_type_sounds')
+
+	if bus == \"Master\":
+		bus = ProjectSettings.get_setting(\"dialogic/audio/type_sound_bus\", \"Master\")
+
+	if !Engine.is_editor_hint() and get_parent() is DialogicNode_DialogText:
+		get_parent().started_revealing_text.connect(_on_started_revealing_text)
+		get_parent().continued_revealing_text.connect(_on_continued_revealing_text)
+		get_parent().finished_revealing_text.connect(_on_finished_revealing_text)
+
+
+func _on_started_revealing_text() -> void:
+	if !enabled or (get_parent() is DialogicNode_DialogText and !get_parent().enabled):
+		return
+	characters_since_last_sound = current_overwrite_data.get('skip_characters', play_every_character-1)+1
+
+
+func _on_continued_revealing_text(new_character:String) -> void:
+	if !enabled or (get_parent() is DialogicNode_DialogText and !get_parent().enabled):
+		return
+
+	# We don't want to play type sounds if Auto-Skip is enabled.
+	if !Engine.is_editor_hint() and DialogicUtil.autoload().Inputs.auto_skip.enabled:
+		return
+
+	# don't play if a voice-track is running
+	if !Engine.is_editor_hint() and get_parent() is DialogicNode_DialogText:
+		if DialogicUtil.autoload().has_subsystem(\"Voice\") and DialogicUtil.autoload().Voice.is_running():
+			return
+
+	# if sound playing and can't interrupt
+	if playing and current_overwrite_data.get('mode', mode) == Modes.AWAIT:
+		return
+
+	# if no sounds were given
+	if current_overwrite_data.get('sounds', sounds).size() == 0:
+		return
+
+	# if the new character is not allowed
+	if new_character in ignore_characters:
+		return
+
+	characters_since_last_sound += 1
+	if characters_since_last_sound < current_overwrite_data.get('skip_characters', play_every_character-1)+1:
+		return
+
+	characters_since_last_sound = 0
+
+	var audio_player: AudioStreamPlayer = self
+	if current_overwrite_data.get('mode', mode) == Modes.OVERLAP:
+		audio_player = AudioStreamPlayer.new()
+		audio_player.bus = bus
+		add_child(audio_player)
+	elif current_overwrite_data.get('mode', mode) == Modes.INTERRUPT:
+		stop()
+
+	#choose the random sound
+	audio_player.stream = current_overwrite_data.get('sounds', sounds)[RNG.randi_range(0, current_overwrite_data.get('sounds', sounds).size() - 1)]
+
+	#choose a random pitch and volume
+	audio_player.pitch_scale = max(0.0001, current_overwrite_data.get('pitch_base', base_pitch) + current_overwrite_data.get('pitch_variance', pitch_variance) * RNG.randf_range(-1.0, 1.0))
+	audio_player.volume_db = current_overwrite_data.get('volume_base', base_volume) + current_overwrite_data.get('volume_variance',volume_variance) * RNG.randf_range(-1.0, 1.0)
+
+	#play the sound
+	audio_player.play(0)
+
+	if current_overwrite_data.get('mode', mode) == Modes.OVERLAP:
+		audio_player.finished.connect(audio_player.queue_free)
+
+
+func _on_finished_revealing_text() -> void:
+	# We don't want to play type sounds if Auto-Skip is enabled.
+	if !Engine.is_editor_hint() and DialogicUtil.autoload().Inputs.auto_skip.enabled:
+		return
+
+	if end_sound != null:
+		stream = end_sound
+		play()
+
+
+func load_overwrite(dictionary:Dictionary) -> void:
+	current_overwrite_data = dictionary
+	if dictionary.has('sound_path'):
+		current_overwrite_data['sounds'] = DialogicNode_TypeSounds.load_sounds_from_path(dictionary.sound_path)
+
+
+static func load_sounds_from_path(path:String) -> Array[AudioStream]:
+	if path.get_extension().to_lower() in ['mp3', 'wav', 'ogg'] and load(path) is AudioStream:
+		return [load(path)]
+	var _sounds: Array[AudioStream] = []
+	for file in DialogicUtil.listdir(path, true, false, true, true):
+		if !file.ends_with('.import'):
+			continue
+		if file.trim_suffix('.import').get_extension().to_lower() in ['mp3', 'wav', 'ogg'] and ResourceLoader.load(file.trim_suffix('.import')) is AudioStream:
+			_sounds.append(ResourceLoader.load(file.trim_suffix('.import')))
+	return _sounds
+
+
+############# USER INTERFACE ###################################################
+
+func _get_configuration_warnings() -> PackedStringArray:
+	if not get_parent() is DialogicNode_DialogText:
+		return [\"This should be the child of a DialogText node!\"]
+	return []
+"
+
+[sub_resource type="GDScript" id="GDScript_kri3s"]
+script/source = "@icon(\"node_next_indicator_icon.svg\")
+class_name DialogicNode_NextIndicator
+extends Control
+
+## Node that is shown when the text is fully revealed.
+## The default implementation allows to set an icon and animation.
+
+
+@export var enabled := true
+
+## If true the next indicator will also be shown if the text is a question.
+@export var show_on_questions := false
+## If true the next indicator will be shown even if dialogic will autocontinue.
+@export var show_on_autoadvance := false
+
+enum Animations {BOUNCE, BLINK, NONE}
+
+## What animation should the indicator do.
+@export var animation := Animations.BOUNCE
+
+var texture_rect: TextureRect
+
+## Set the image to use as the indicator.
+@export var texture: Texture2D = preload(\"res://addons/dialogic/Example Assets/next-indicator/next-indicator.png\") as Texture2D:
+	set(_texture):
+		texture = _texture
+		if texture_rect:
+			texture_rect.texture = texture
+
+@export var texture_size := Vector2(32,32):
+	set(_texture_size):
+		texture_size = _texture_size
+		if has_node('Texture'):
+			get_node('Texture').size = _texture_size
+			get_node('Texture').position = -_texture_size
+
+
+var tween: Tween
+
+func _ready() -> void:
+	add_to_group('dialogic_next_indicator')
+
+	# Creating TextureRect if missing
+	if not texture_rect:
+		var icon := TextureRect.new()
+		icon.name = 'Texture'
+		icon.ignore_texture_size = true
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.size = texture_size
+		icon.position = -icon.size
+		add_child(icon)
+		texture_rect = icon
+
+	texture_rect.texture = texture
+
+	hide()
+	visibility_changed.connect(_on_visibility_changed)
+
+
+func _on_visibility_changed() -> void:
+	if visible:
+		play_animation(animation, 1.0)
+
+
+func play_animation(current_animation: int, time:float) -> void:
+	# clean up previous tween to prevent slipping
+	if tween:
+		tween.stop()
+
+	match current_animation:
+		Animations.BOUNCE:
+			tween = (create_tween() as Tween)
+			var distance := 4
+			tween.set_parallel(false)
+			tween.set_trans(Tween.TRANS_SINE)
+			tween.set_ease(Tween.EASE_IN_OUT)
+			tween.set_loops()
+
+			tween.tween_property(self, 'position', Vector2(0,distance), time*0.3).as_relative()
+			tween.tween_property(self, 'position', - Vector2(0,distance), time*0.3).as_relative()
+		Animations.BLINK:
+			tween = (create_tween() as Tween)
+			tween.set_parallel(false)
+			tween.set_trans(Tween.TRANS_SINE)
+			tween.set_ease(Tween.EASE_IN_OUT)
+			tween.set_loops()
+
+			tween.tween_property(self, 'modulate:a', 0, time*0.3)
+			tween.tween_property(self, 'modulate:a', 1, time*0.3)
+"
+
+[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_ktigg"]
+load_path = "res://.godot/imported/next.svg-689f85597f487815b8ddefa23d22bf6f.ctex"
+
+[sub_resource type="GDScript" id="GDScript_jfljx"]
+script/source = "extends Range
+
+var enabled: bool = true
+
+func _process(_delta : float) -> void:
+	if !enabled:
+		hide()
+		return
+	if DialogicUtil.autoload().Inputs.auto_advance.get_progress() < 0:
+		hide()
+	else:
+		show()
+		value = DialogicUtil.autoload().Inputs.auto_advance.get_progress()
+"
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wolte"]
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="FontVariation" id="FontVariation_v8y64"]
+
+[sub_resource type="GDScript" id="GDScript_5nyr5"]
+script/source = "@icon(\"node_name_label_icon.svg\")
+extends Label
+
+class_name DialogicNode_NameLabel
+
+# If true, the label will be hidden if no character speaks.
+@export var hide_when_empty := true
+@export var name_label_root: Node = self
+@export var use_character_color := true
+
+func _ready() -> void:
+	add_to_group('dialogic_name_label')
+	if hide_when_empty:
+		name_label_root.visible = false
+	text = \"\"
+
+
+func _set(property, what):
+	if property == 'text' and typeof(what) == TYPE_STRING:
+		text = what
+		if hide_when_empty:
+			name_label_root.visible = !what.is_empty()
+		else:
+			name_label_root.show()
+		return true
+"
+
+[sub_resource type="PackedScene" id="PackedScene_56dgf"]
+_bundled = {
+"conn_count": 0,
+"conns": PackedInt32Array(),
+"editable_instances": [],
+"names": PackedStringArray("VN_TextboxLayer", "Control", "layout_mode", "anchors_preset", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "script", "box_panel", "box_size", "name_label_box_panel", "name_label_box_modulate", "Animations", "AnimationPlayer", "unique_name_in_owner", "libraries", "autoplay", "script", "Anchor", "Control", "layout_mode", "anchors_preset", "anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "AnimationParent", "Control", "layout_mode", "anchors_preset", "anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "Sizer", "Control", "unique_name_in_owner", "layout_mode", "anchors_preset", "anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "offset_left", "offset_top", "offset_right", "grow_horizontal", "grow_vertical", "mouse_filter", "DialogTextPanel", "PanelContainer", "unique_name_in_owner", "self_modulate", "layout_mode", "anchors_preset", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "theme_override_styles/panel", "metadata/_edit_layout_mode", "DialogicNode_DialogText", "RichTextLabel", "unique_name_in_owner", "layout_mode", "mouse_filter", "theme_override_colors/default_color", "theme_override_font_sizes/normal_font_size", "theme_override_font_sizes/bold_font_size", "theme_override_font_sizes/italics_font_size", "theme_override_font_sizes/bold_italics_font_size", "bbcode_enabled", "text", "visible_characters_behavior", "script", "textbox_root", "DialogicNode_TypeSounds", "AudioStreamPlayer", "unique_name_in_owner", "script", "play_every_character", "NextIndicator", "Control", "unique_name_in_owner", "layout_mode", "size_flags_horizontal", "size_flags_vertical", "mouse_filter", "script", "show_on_questions", "texture", "metadata/_edit_layout_mode", "AutoAdvanceProgressbar", "ProgressBar", "unique_name_in_owner", "modulate", "custom_minimum_size", "layout_mode", "size_flags_vertical", "mouse_filter", "max_value", "step", "value", "show_percentage", "script", "NameLabelHolder", "Control", "layout_mode", "mouse_filter", "NameLabelPanel", "PanelContainer", "unique_name_in_owner", "self_modulate", "layout_mode", "offset_top", "offset_right", "offset_bottom", "mouse_filter", "theme_override_styles/panel", "metadata/_edit_layout_mode", "metadata/_edit_use_custom_anchors", "metadata/_edit_group_", "DialogicNode_NameLabel", "Label", "unique_name_in_owner", "layout_mode", "theme_override_colors/font_color", "theme_override_fonts/font", "theme_override_font_sizes/font_size", "text", "script", "name_label_root"),
+"node_count": 13,
+"node_paths": [NodePath("."), NodePath("."), NodePath("./Anchor"), NodePath("./Anchor/AnimationParent"), NodePath("./Anchor/AnimationParent/Sizer"), NodePath("./Anchor/AnimationParent/Sizer/DialogTextPanel"), NodePath("./Anchor/AnimationParent/Sizer/DialogTextPanel/DialogicNode_DialogText"), NodePath("./Anchor/AnimationParent/Sizer/DialogTextPanel"), NodePath("./Anchor/AnimationParent/Sizer/DialogTextPanel"), NodePath("./Anchor/AnimationParent/Sizer/DialogTextPanel"), NodePath("./Anchor/AnimationParent/Sizer/DialogTextPanel/NameLabelHolder"), NodePath("./Anchor/AnimationParent/Sizer/DialogTextPanel/NameLabelHolder/NameLabelPanel")],
+"nodes": PackedInt32Array(-1, -1, 1, 0, -1, 12, 2, 0, 3, 1, 4, 2, 5, 3, 6, 4, 7, 5, 8, 6, 9, 7, 10, 8, 11, 9, 12, 10, 13, 11, 0, 1073741824, 0, 15, 14, -1, 4, 16, 12, 17, 13, 18, 14, 19, 15, 0, 1073741825, 0, 21, 20, -1, 8, 22, 16, 23, 17, 24, 18, 25, 19, 26, 20, 27, 21, 28, 22, 29, 23, 0, 1073741826, 0, 31, 30, -1, 9, 32, 24, 33, 25, 34, 26, 35, 27, 36, 28, 37, 29, 38, 30, 39, 31, 40, 32, 0, 1073741827, 0, 42, 41, -1, 13, 43, 33, 44, 34, 45, 35, 46, 36, 47, 37, 48, 38, 49, 39, 50, 40, 51, 41, 52, 42, 53, 43, 54, 44, 55, 45, 0, 1073741828, 0, 57, 56, -1, 11, 58, 46, 59, 47, 60, 48, 61, 49, 62, 50, 63, 51, 64, 52, 65, 53, 66, 54, 67, 55, 68, 56, 0, 1073741829, 0, 70, 69, -1, 13, 71, 57, 72, 58, 73, 59, 74, 60, 75, 61, 76, 62, 77, 63, 78, 64, 79, 65, 80, 66, 81, 67, 82, 68, 1073741907, 69, 0, 1073741830, 0, 85, 84, -1, 3, 86, 70, 87, 71, 88, 72, 0, 1073741831, 0, 90, 89, -1, 9, 91, 73, 92, 74, 93, 75, 94, 76, 95, 77, 96, 78, 97, 79, 98, 80, 99, 81, 0, 1073741832, 0, 101, 100, -1, 11, 102, 82, 103, 83, 104, 84, 105, 85, 106, 86, 107, 87, 108, 88, 109, 89, 110, 90, 111, 91, 112, 92, 0, 1073741833, 0, 114, 113, -1, 2, 115, 93, 116, 94, 0, 1073741834, 0, 118, 117, -1, 11, 119, 95, 120, 96, 121, 97, 122, 98, 123, 99, 124, 100, 125, 101, 126, 102, 127, 103, 128, 104, 129, 105, 0, 1073741835, 0, 131, 130, -1, 8, 132, 106, 133, 107, 134, 108, 135, 109, 136, 110, 137, 111, 138, 112, 1073741963, 113, 0),
+"variants": [3, 15, 1.0, 1.0, 2, 2, 2, SubResource("GDScript_627c3"), "res://addons/dialogic/Modules/DefaultLayoutParts/Layer_VN_Textbox/vn_textbox_default_panel.tres", Vector2(550, 150), "res://addons/dialogic/Modules/DefaultLayoutParts/Layer_VN_Textbox/vn_textbox_name_label_panel.tres", Color(0, 0, 0, 1), true, {
+"": SubResource("AnimationLibrary_c14kh")
+}, "RESET", SubResource("GDScript_dqwdg"), 1, 7, 0.5, 1.0, 0.5, 1.0, 2, 0, 1, 7, 0.5, 1.0, 0.5, 1.0, 2, 0, 2, true, 1, 7, 0.5, 1.0, 0.5, 1.0, -150.0, -50.0, 150.0, 2, 0, 2, true, Color(0.00784314, 0.00784314, 0.00784314, 0.843137), 1, 15, 1.0, 1.0, 2, 2, 2, SubResource("StyleBoxFlat_vri5o"), 1, true, 2, 1, Color(1, 1, 1, 1), 15, 15, 15, 15, true, "Some default text", 1, SubResource("GDScript_roolt"), NodePath(".."), true, SubResource("GDScript_4x6ul"), 0, true, 2, 8, 8, 2, SubResource("GDScript_kri3s"), true, SubResource("CompressedTexture2D_ktigg"), 1, true, Color(1, 1, 1, 0.188235), Vector2(0, 10), 2, 8, 2, 1.0, 0.001, 0.5, false, SubResource("GDScript_jfljx"), 2, 2, true, Color(0.00784314, 0.00784314, 0.00784314, 0.843137), 1, -50.0, 9.0, -25.0, 2, SubResource("StyleBoxFlat_wolte"), 1, true, true, true, 2, Color(1, 1, 1, 1), SubResource("FontVariation_v8y64"), 15, "S", SubResource("GDScript_5nyr5"), NodePath("..")],
+"version": 3
+}
+
+[sub_resource type="Resource" id="Resource_mp0sv"]
+script = SubResource("GDScript_lxpkx")
+scene = SubResource("PackedScene_56dgf")
+
+[sub_resource type="GDScript" id="GDScript_aidpj"]
+script/source = "@tool
+extends DialogicLayoutLayer
+
+## Layer that provides a popup with glossary info,
+## when hovering a glossary entry on a text node.
+
+
+@export_group('Text')
+enum Alignment {LEFT, CENTER, RIGHT}
+@export var title_alignment: Alignment = Alignment.LEFT
+@export var text_alignment: Alignment = Alignment.LEFT
+@export var extra_alignment: Alignment = Alignment.RIGHT
+
+@export_subgroup(\"Colors\")
+enum TextColorModes {GLOBAL, ENTRY, CUSTOM}
+@export var title_color_mode: TextColorModes = TextColorModes.ENTRY
+@export var title_custom_color: Color = Color.WHITE
+@export var text_color_mode: TextColorModes = TextColorModes.ENTRY
+@export var text_custom_color: Color = Color.WHITE
+@export var extra_color_mode: TextColorModes = TextColorModes.ENTRY
+@export var extra_custom_color: Color = Color.WHITE
+
+
+@export_group(\"Font\")
+@export var font_use_global: bool = true
+@export_file('*.ttf', '*.tres') var font_custom: String = \"\"
+
+@export_subgroup('Sizes')
+@export var font_title_size: int = 18
+@export var font_text_size: int = 17
+@export var font_extra_size: int = 15
+
+
+@export_group(\"Box\")
+@export_subgroup(\"Color\")
+enum ModulateModes {BASE_COLOR_ONLY, ENTRY_COLOR_ON_BOX, GLOBAL_BG_COLOR}
+@export var box_modulate_mode: ModulateModes = ModulateModes.ENTRY_COLOR_ON_BOX
+@export var box_base_modulate: Color = Color.WHITE
+@export_subgroup(\"Size\")
+@export var box_width: int = 200
+
+const MISSING_INDEX := -1
+func get_pointer() -> Control:
+	return $Pointer
+
+
+func get_title() -> Label:
+	return %Title
+
+
+func get_text() -> RichTextLabel:
+	return %Text
+
+
+func get_extra() -> RichTextLabel:
+	return %Extra
+
+
+func get_panel() -> PanelContainer:
+	return %Panel
+
+
+func get_panel_point() -> PanelContainer:
+	return %PanelPoint
+
+
+func _ready() -> void:
+	if Engine.is_editor_hint():
+		return
+
+	get_pointer().hide()
+	var text_system: Node = DialogicUtil.autoload().get(&'Text')
+	var _error: int = 0
+	_error = text_system.connect(&'animation_textbox_hide', get_pointer().hide)
+	_error = text_system.connect(&'meta_hover_started', _on_dialogic_display_dialog_text_meta_hover_started)
+	_error = text_system.connect(&'meta_hover_ended', _on_dialogic_display_dialog_text_meta_hover_ended)
+
+
+## Method that shows the bubble and fills in the info
+func _on_dialogic_display_dialog_text_meta_hover_started(meta: String) -> void:
+	var entry_info := DialogicUtil.autoload().Glossary.get_entry(meta)
+
+	if entry_info.is_empty():
+		return
+
+	get_pointer().show()
+	get_title().text = entry_info.title
+	get_text().text = entry_info.text
+	get_text().text = ['', '[center]', '[right]'][text_alignment] + get_text().text
+	get_extra().text = entry_info.extra
+	get_extra().text = ['', '[center]', '[right]'][extra_alignment] + get_extra().text
+	get_pointer().global_position = get_pointer().get_global_mouse_position()
+
+	if title_color_mode == TextColorModes.ENTRY:
+		get_title().add_theme_color_override(&\"font_color\", entry_info.color)
+	if text_color_mode == TextColorModes.ENTRY:
+		get_text().add_theme_color_override(&\"default_color\", entry_info.color)
+	if extra_color_mode == TextColorModes.ENTRY:
+		get_extra().add_theme_color_override(&\"default_color\", entry_info.color)
+
+	match box_modulate_mode:
+		ModulateModes.ENTRY_COLOR_ON_BOX:
+			get_panel().self_modulate = entry_info.color
+			get_panel_point().self_modulate = entry_info.color
+
+
+## Method that keeps the bubble at mouse position when visible
+func _process(_delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
+
+	var pointer: Control = get_pointer()
+	if pointer.visible:
+		pointer.global_position = pointer.get_global_mouse_position()
+
+
+## Method that hides the bubble
+func _on_dialogic_display_dialog_text_meta_hover_ended(_meta:String) -> void:
+	get_pointer().hide()
+
+
+
+func _apply_export_overrides() -> void:
+	# Apply fonts
+	var font: Font
+	var global_font_setting: String = get_global_setting(&\"font\", '')
+	if font_use_global and ResourceLoader.exists(global_font_setting):
+		font = load(global_font_setting)
+	elif ResourceLoader.exists(font_custom):
+		font = load(font_custom)
+
+	var title: Label = get_title()
+	if font:
+		title.add_theme_font_override(&\"font\", font)
+	title.horizontal_alignment = title_alignment as HorizontalAlignment
+
+	# Apply font & sizes
+	title.add_theme_font_size_override(&\"font_size\", font_title_size)
+	var labels: Array[RichTextLabel] = [get_text(), get_extra()]
+	var sizes: PackedInt32Array = [font_text_size, font_extra_size]
+	for i : int in len(labels):
+		if font:
+			labels[i].add_theme_font_override(&'normal_font', font)
+
+		labels[i].add_theme_font_size_override(&\"normal_font_size\", sizes[i])
+		labels[i].add_theme_font_size_override(&\"bold_font_size\", sizes[i])
+		labels[i].add_theme_font_size_override(&\"italics_font_size\", sizes[i])
+		labels[i].add_theme_font_size_override(&\"bold_italics_font_size\", sizes[i])
+		labels[i].add_theme_font_size_override(&\"mono_font_size\", sizes[i])
+
+
+	# Apply text colors
+	# this applies Global or Custom colors, entry colors are applied on hover
+	var controls: Array[Control] = [get_title(), get_text(), get_extra()]
+	var settings: Array[StringName] = [&'font_color', &'default_color', &'default_color']
+	var color_modes: Array[TextColorModes] = [title_color_mode, text_color_mode, extra_color_mode]
+	var custom_colors: PackedColorArray = [title_custom_color, text_custom_color, extra_custom_color]
+	for i : int in len(controls):
+		match color_modes[i]:
+			TextColorModes.GLOBAL:
+				controls[i].add_theme_color_override(settings[i], get_global_setting(&'font_color', custom_colors[i]) as Color)
+			TextColorModes.CUSTOM:
+				controls[i].add_theme_color_override(settings[i], custom_colors[i])
+
+	# Apply box size
+	var panel: PanelContainer = get_panel()
+	panel.size.x = box_width
+	panel.position.x = -box_width/2.0
+
+	# Apply box coloring
+	match box_modulate_mode:
+		ModulateModes.BASE_COLOR_ONLY:
+			panel.self_modulate = box_base_modulate
+			get_panel_point().self_modulate = box_base_modulate
+		ModulateModes.GLOBAL_BG_COLOR:
+			panel.self_modulate = get_global_setting(&'bg_color', box_base_modulate)
+			get_panel_point().self_modulate = get_global_setting(&'bg_color', box_base_modulate)
+"
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_a3cyk"]
+bg_color = Color(0.12549, 0.12549, 0.12549, 1)
+border_width_left = 2
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 2
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+expand_margin_left = 5.0
+expand_margin_top = 5.0
+expand_margin_right = 5.0
+expand_margin_bottom = 5.0
+
+[sub_resource type="PackedScene" id="PackedScene_0nmc6"]
+_bundled = {
+"conn_count": 0,
+"conns": PackedInt32Array(),
+"editable_instances": [],
+"names": PackedStringArray("Glossary", "Control", "layout_mode", "anchors_preset", "mouse_filter", "script", "Pointer", "Control", "anchors_preset", "Panel", "PanelContainer", "unique_name_in_owner", "layout_mode", "anchors_preset", "anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "offset_left", "offset_top", "offset_right", "offset_bottom", "grow_horizontal", "grow_vertical", "theme_override_styles/panel", "metadata/_edit_use_custom_anchors", "metadata/_edit_layout_mode", "VBox", "VBoxContainer", "layout_mode", "theme_override_constants/separation", "Title", "Label", "unique_name_in_owner", "layout_mode", "HSeparator", "HSeparator", "layout_mode", "Text", "RichTextLabel", "unique_name_in_owner", "layout_mode", "bbcode_enabled", "fit_content", "Extra", "RichTextLabel", "unique_name_in_owner", "layout_mode", "theme_override_font_sizes/normal_font_size", "bbcode_enabled", "fit_content", "Control", "Control", "show_behind_parent", "layout_mode", "size_flags_horizontal", "size_flags_vertical", "PanelPoint", "PanelContainer", "unique_name_in_owner", "layout_mode", "offset_left", "offset_top", "offset_right", "offset_bottom", "rotation", "size_flags_horizontal", "size_flags_vertical", "theme_override_styles/panel"),
+"node_count": 10,
+"node_paths": [NodePath("."), NodePath("./Pointer"), NodePath("./Pointer/Panel"), NodePath("./Pointer/Panel/VBox"), NodePath("./Pointer/Panel/VBox"), NodePath("./Pointer/Panel/VBox"), NodePath("./Pointer/Panel/VBox"), NodePath("./Pointer/Panel"), NodePath("./Pointer/Panel/Control")],
+"nodes": PackedInt32Array(-1, -1, 1, 0, -1, 4, 2, 0, 3, 1, 4, 2, 5, 3, 0, 1073741824, 0, 7, 6, -1, 1, 8, 4, 0, 1073741825, 0, 10, 9, -1, 16, 11, 5, 12, 6, 13, 7, 14, 8, 15, 9, 16, 10, 17, 11, 18, 12, 19, 13, 20, 14, 21, 15, 22, 16, 23, 17, 24, 18, 25, 19, 26, 20, 0, 1073741826, 0, 28, 27, -1, 2, 29, 21, 30, 22, 0, 1073741827, 0, 32, 31, -1, 2, 33, 23, 34, 24, 0, 1073741828, 0, 36, 35, -1, 1, 37, 25, 0, 1073741829, 0, 39, 38, -1, 4, 40, 26, 41, 27, 42, 28, 43, 29, 0, 1073741830, 0, 45, 44, -1, 5, 46, 30, 47, 31, 48, 32, 49, 33, 50, 34, 0, 1073741831, 0, 52, 51, -1, 4, 53, 35, 54, 36, 55, 37, 56, 38, 0, 1073741832, 0, 58, 57, -1, 10, 59, 39, 60, 40, 61, 41, 62, 42, 63, 43, 64, 44, 65, 45, 66, 46, 67, 47, 68, 48, 0),
+"variants": [3, 0, 2, SubResource("GDScript_aidpj"), 0, true, 1, 7, 0.5, 1.0, 0.5, 1.0, -81.0, -113.0, 86.0, -35.0, 2, 0, SubResource("StyleBoxFlat_a3cyk"), true, 1, 2, 0, true, 2, 2, true, 2, true, true, true, 2, 15, true, true, true, 2, 4, 8, true, 0, -0.999999, -14.0, 19.0, 6.0, 0.75799, 4, 8, SubResource("StyleBoxFlat_a3cyk")],
+"version": 3
+}
+
+[sub_resource type="Resource" id="Resource_824le"]
+script = SubResource("GDScript_lxpkx")
+scene = SubResource("PackedScene_0nmc6")
+
+[sub_resource type="GDScript" id="GDScript_1y1i4"]
+script/source = "@tool
+extends DialogicLayoutLayer
+
+## A layer that allows showing up to 10 choices.
+## Choices are positioned in the center of the screen.
+
+@export_group(\"Text\")
+@export_subgroup('Font')
+@export var font_use_global: bool = true
+@export_file('*.ttf', '*.tres') var font_custom: String = \"\"
+@export_subgroup('Size')
+@export var font_size_use_global: bool = true
+@export var font_size_custom: int = 16
+@export_subgroup('Color')
+@export var text_color_use_global: bool = true
+@export var text_color_custom: Color = Color.WHITE
+@export var text_color_pressed: Color = Color.WHITE
+@export var text_color_hovered: Color = Color.GRAY
+@export var text_color_disabled: Color = Color.DARK_GRAY
+@export var text_color_focused: Color = Color.WHITE
+
+@export_group('Boxes')
+@export_subgroup('Panels')
+@export_file('*.tres') var boxes_stylebox_normal: String = \"res://addons/dialogic/Modules/DefaultLayoutParts/Layer_VN_Choices/choice_panel_normal.tres\"
+@export_file('*.tres') var boxes_stylebox_hovered: String = \"res://addons/dialogic/Modules/DefaultLayoutParts/Layer_VN_Choices/choice_panel_hover.tres\"
+@export_file('*.tres') var boxes_stylebox_pressed: String = \"\"
+@export_file('*.tres') var boxes_stylebox_disabled: String = \"\"
+@export_file('*.tres') var boxes_stylebox_focused: String = \"res://addons/dialogic/Modules/DefaultLayoutParts/Layer_VN_Choices/choice_panel_focus.tres\"
+@export_subgroup('Modulate')
+@export_subgroup('Size & Position')
+@export var boxes_v_separation: int = 10
+@export var boxes_fill_width: bool = true
+@export var boxes_min_size: Vector2 = Vector2()
+@export var boxes_offset: Vector2 = Vector2()
+
+@export_group('Sounds')
+@export_range(-80, 24, 0.01) var sounds_volume: float = -10
+@export_file(\"*.wav\", \"*.ogg\", \"*.mp3\") var sounds_pressed: String = \"res://addons/dialogic/Example Assets/sound-effects/typing1.wav\"
+@export_file(\"*.wav\", \"*.ogg\", \"*.mp3\") var sounds_hover: String = \"res://addons/dialogic/Example Assets/sound-effects/typing2.wav\"
+@export_file(\"*.wav\", \"*.ogg\", \"*.mp3\") var sounds_focus: String = \"res://addons/dialogic/Example Assets/sound-effects/typing4.wav\"
+
+@export_group('Choices')
+@export_subgroup('Behavior')
+@export var maximum_choices: int = 10
+@export_file('*.tscn') var choices_custom_button: String = \"\"
+
+func get_choices() -> VBoxContainer:
+	return $Choices
+
+
+func get_button_sound() -> DialogicNode_ButtonSound:
+	return %DialogicNode_ButtonSound
+
+
+## Method that applies all exported settings
+func _apply_export_overrides() -> void:
+	# apply text settings
+	var layer_theme: Theme = Theme.new()
+
+	# font
+	if font_use_global and get_global_setting(&'font', false):
+		layer_theme.set_font(&'font', &'Button', load(get_global_setting(&'font', '') as String) as Font)
+	elif ResourceLoader.exists(font_custom):
+		layer_theme.set_font(&'font', &'Button', load(font_custom) as Font)
+
+	# font size
+	if font_size_use_global:
+		layer_theme.set_font_size(&'font_size', &'Button', get_global_setting(&'font_size', font_size_custom) as int)
+	else:
+		layer_theme.set_font_size(&'font_size', &'Button', font_size_custom)
+
+	# font color
+	if text_color_use_global:
+		layer_theme.set_color(&'font_color', &'Button', get_global_setting(&'font_color', text_color_custom) as Color)
+	else:
+		layer_theme.set_color(&'font_color', &'Button', text_color_custom)
+
+	layer_theme.set_color(&'font_pressed_color', &'Button', text_color_pressed)
+	layer_theme.set_color(&'font_hover_color', &'Button', text_color_hovered)
+	layer_theme.set_color(&'font_disabled_color', &'Button', text_color_disabled)
+	layer_theme.set_color(&'font_pressed_color', &'Button', text_color_pressed)
+	layer_theme.set_color(&'font_focus_color', &'Button', text_color_focused)
+
+
+	# apply box settings
+	if ResourceLoader.exists(boxes_stylebox_normal):
+		var style_box: StyleBox = load(boxes_stylebox_normal)
+		layer_theme.set_stylebox(&'normal', &'Button', style_box)
+		layer_theme.set_stylebox(&'hover', &'Button', style_box)
+		layer_theme.set_stylebox(&'pressed', &'Button', style_box)
+		layer_theme.set_stylebox(&'disabled', &'Button', style_box)
+		layer_theme.set_stylebox(&'focus', &'Button', style_box)
+
+	if ResourceLoader.exists(boxes_stylebox_hovered):
+		layer_theme.set_stylebox(&'hover', &'Button', load(boxes_stylebox_hovered) as StyleBox)
+
+	if ResourceLoader.exists(boxes_stylebox_pressed):
+		layer_theme.set_stylebox(&'pressed', &'Button', load(boxes_stylebox_pressed) as StyleBox)
+	if ResourceLoader.exists(boxes_stylebox_disabled):
+		layer_theme.set_stylebox(&'disabled', &'Button', load(boxes_stylebox_disabled) as StyleBox)
+	if ResourceLoader.exists(boxes_stylebox_focused):
+		layer_theme.set_stylebox(&'focus', &'Button', load(boxes_stylebox_focused) as StyleBox)
+
+	var choices : Control = get_choices()
+	choices.add_theme_constant_override(&\"separation\", boxes_v_separation)
+	self.position = boxes_offset
+
+	# replace choice buttons and apply settings
+	for child: Node in choices.get_children():
+		if child is DialogicNode_ChoiceButton:
+			child.queue_free()
+
+	var choices_button: PackedScene = null
+	if not choices_custom_button.is_empty():
+		if ResourceLoader.exists(choices_custom_button):
+			choices_button = (load(choices_custom_button) as PackedScene)
+		else:
+			printerr(\"[Dialogic] Unable to load custom choice button from \", choices_custom_button)
+
+	for i in range(0, maximum_choices):
+		var new_choice : DialogicNode_ChoiceButton
+		if choices_button != null:
+			new_choice = (choices_button.instantiate() as DialogicNode_ChoiceButton)
+		else:
+			new_choice = DialogicNode_ChoiceButton.new()
+		choices.add_child(new_choice)
+
+		if boxes_fill_width:
+			new_choice.size_flags_horizontal = Control.SIZE_FILL
+		else:
+			new_choice.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+
+		new_choice.custom_minimum_size = boxes_min_size
+
+
+	set(&'theme', layer_theme)
+
+	# apply sound settings
+	var button_sound: DialogicNode_ButtonSound = get_button_sound()
+	button_sound.volume_db = sounds_volume
+	button_sound.sound_pressed = load(sounds_pressed)
+	button_sound.sound_hover = load(sounds_hover)
+	button_sound.sound_focus = load(sounds_focus)
+"
+
+[sub_resource type="GDScript" id="GDScript_m7pkt"]
+script/source = "class_name DialogicNode_ButtonSound
+extends AudioStreamPlayer
+
+## Node that is used for playing sound effects on hover/focus/press of sibling DialogicNode_ChoiceButtons.
+
+## Sound to be played if one of the sibling ChoiceButtons is pressed.
+## If sibling ChoiceButton has a sound_pressed set, that is prioritized.
+@export var sound_pressed: AudioStream
+## Sound to be played on hover. See [sound_pressed] for more.
+@export var sound_hover: AudioStream
+## Sound to be played on focus. See [sound_pressed] for more.
+@export var sound_focus: AudioStream
+
+func _ready() -> void:
+	add_to_group('dialogic_button_sound')
+	_connect_all_buttons()
+
+#basic play sound
+func play_sound(sound) -> void:
+	if sound != null:
+		stream = sound
+		play()
+
+func _connect_all_buttons() -> void:
+	for child in get_parent().get_children():
+		if child is DialogicNode_ChoiceButton:
+			child.button_up.connect(_on_pressed.bind(child.sound_pressed))
+			child.mouse_entered.connect(_on_hover.bind(child.sound_hover))
+			child.focus_entered.connect(_on_focus.bind(child.sound_focus))
+
+
+#the custom_sound argument comes from the specifec button and get used
+#if none are found, it uses the above sounds
+
+func _on_pressed(custom_sound) -> void:
+	if custom_sound != null:
+		play_sound(custom_sound)
+	else:
+		play_sound(sound_pressed)
+
+func _on_hover(custom_sound) -> void:
+	if custom_sound != null:
+		play_sound(custom_sound)
+	else:
+		play_sound(sound_hover)
+
+func _on_focus(custom_sound) -> void:
+	if custom_sound != null:
+		play_sound(custom_sound)
+	else:
+		play_sound(sound_focus)
+
+"
+
+[sub_resource type="AudioStreamWAV" id="AudioStreamWAV_824le"]
+data = PackedByteArray("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+v8KAB8APABOAFYATQBKAEUASwBFADkAHAAJAPH/8P/r//n/BQAXACEAHAANAPX/7//x/wMABwAEAP7//P8CAAMAAwD8/+//7//w//r/BwAGAAYA+P/0//T/9//8/+7/7v/f/+H/2P/e/+L/7v8BAAcAEwAKABYAIQAzAEAANwA6ACwAJwAWAAoA+P/2/+7///8NACkAOABJAEYARQA2ACsAFAAAAPT/9P///xIAHAAnACUAGgAUAAUABwAFAAQA+P/i/9b/3v/j/+f/1v/R/9n/6v/4//f/6//k/+D/5v/r/+3/9f/3/wIAAAAQABwAMgBAAE0AUgBWAEkAMAATAPP/3v/Z/9X/5P/r//r/AAABAO//5f/d/+z/+P/2/+3/3//n/+//+P/2//D/9v/5/wcACAAUAB0AGAAVAAkAFAAcACUAHwAeABgAFgD//+n/zf/J/87/1//T/9b/2P/o/+3/5f/u//D/AwD8//P/6v/o//z/BQAZACQAOAA4ADEAFAACAPb/9v/s//D/8P/9/wcACwAEAPf/5P/T/8n/zP/d//f/CQAOAAUA9//x/+H/2v/J/77/wf/H/9X/5f/u/wAADQAPAAwABQD6//3/7//3//b/DQAbACkALwAgAB0AFAAPAAkABgAGABYAIQArACUAFQD8/+r/3//e/+D/4//h/93/2v/a/+z/9/8KAAwACwD///L/5P/d/93/5f/u//r/AgANABUAIgAnACwAKAAhABsAEgADAOz/1v/N/9r/5f/6//z/DgAXAB8AGwATAAoACgAEAAkACAAPAAQA8//i/9//7//2//v/+f/7/wEAAwAAAAUACAAIAPv/6P/b/9r/4v/q//v/AQARABAAIQAyAEcATAA5AB4ADAADAAwADAAPABIAFwAfACEAGAANAAAA9P/u/+f/6P/i/+L/4P/n//j/CQAWAB0AGAAYABQAEQADAP3/8P8AAAoAGQAXABEADAAOABUAHAAgACAAIAASAAcA7v/e/9n/4f/0/wQABQD5/+H/z//F/8//4v8DACAAKwAgAAEA4P/R/8n/3v/3/w0AEgAGAAYACQAaABsAJAAkADEALgAnAAkA5//T/9T/9v8iAEgAWgBSADYAGAD3/+X/2//q/wAAEQARAPn/2f+9/77/3P8FACUAKAArABwAEwD2/+3/3//l/+H/4f/g/+n/9v8CAAsABwAMAAkAEgAMABEABgAAAPL/9P/1/wMACAARABkAFwAPAPr/8f/o//D//P8OAB0AIwAdAAsA+f/w/+D/2//K/87/3v/v//7/9v/1//D/7v/x//L/AAAUACEAJQAmACAAHAAZAA0ACgAKAPz/8v/Y/9X/2f/t/wAACAAdACMALQAZAAMA5v/g/9v/3v/d/+3/8P/+/+7/8P/s//r//P8BAAUABwAGAP3/8//2//z/+//3/+v/9P/3/wcABwARABIAFwAKAAsABQAKAAcA/v/+//z/CQAOAA8ACgD//////v/+//P/7//r/+n/5P/d/9f/5P/u/wMACgAWABQAEQAFAPH/6v/n/+7/8v/5//z////3//H/7f/6/wsAGgAmABUACADq/+X/3v/o//f/CAAVABsAEgAEAPb/6//0/wMAIAA2AEEAPQAtABkACwD2//X/7v/x//f/9P/3/+n/5v/k//b/CQAXABgADwAIAP/////8////AQD///z/9f/1/+//8v/g/+v/7/8MABkAHgAXAAsADAADAAgA+f/4//D/8f/v//7/DgArADEANAAmAB0AFAARAA8AEAAPAA0ADgALAAYABwD///3/8v/p/+H/3P/g/+L/6f/w//j/CwANABQACgANAAsABQABAPv/BwAMABgAFQAQAA4AEQAbACgAJgAgAAoA9v/j/+H/6f/0//v/AAD5//n/+P/4////AQAGAAgABwD8//f/8v/1//v/AwATABwAJgAcABcABQD1/+3/4f/y//H/CgADAAQA7v/m/+L/5//2/wIACwAPAAUABAAFAAgAFAAaACIAGgASAPz/8//l/+D/7f/5/xMAIQAsACoAGwAJAPD/3//Q/9H/3P/x//7/BgAKAAQAAgD9//r/AwABAA8ACQAJAAQABwAIAAQA/P/x/+n/3f/T/9D/1v/e/+7/+/8KABcAHwAmACIAGgANAAYAAAACAAMACAAJAAYABAD//wAA/v8FAAEAAgD7//r/9v/3/+3/7//a/9b/zP/S/97/5v/1//f/AwACAAgACAAMAAwAEAATABYAGAAUAAwAAgAAAAQACgAIAAwABwAQAA8ABAD+//D/9f/8/wIA+//6/+v/8v/o/+z/8f/6/wUACAAAAPn/7P/j/97/4//r//f/+f/8//b/+v/z//v/+/8CAAoAEgAYABoAFQATABIAEQARAAwABwD//wAA+/8DAP//BwAJAAwADgAIAAYA///3//L/7f/0//P//P/4//j/9//9//b/+v/x//b/AQAEAAkAEQATAB0AEQAHAPP/7//t//n/AwALABIADgAQAAYACwAIAAgAAwD///r/9v/v/+X/7P/z/wUADAAHAAEA+f/4//j/+P/7/wYAEAAYABsAEgARAAMABQAAAAYAAgAGAAEACQABAAgA/v8FAP3//f/1//L/8P/y//L/+f/8/wIACAAFAAIA/P/y//X/9//8/wAAAgAIABEAGAAUABYACAAFAPf/8v/w//P//v8AAA0ACQAKAAMA///8//7//v8LAAsAEgARAAwADQAJAAcAAQD4/+3/5//h/+n/7v/5/wgADAAWAAsAAQDt/+L/2//i/+j//P8AAAoACAAHAA0AEwAVABsAFQATAAcA///3////AAAEAAIAAQADAAQA+P/1/+3/8v/0//n//v8JAAwAFAAIAAUA+v/9//7/BgAGAAkABQAEAAEAAgADAAQA/P////j//f/+//z/AAD5//v/9P/5//X/+//+//7/AwD///r///8GABMAIAAcABcABgD///P/8v/y//X/+v/9/wEAAgAMAAQABwD7//f/8//t/+7/7f/w//j/+P8AAAAA/P/7//L/8v/w/+//9f/9/wUACgALAAYAAwABAP7/AwACAAUABQAGAAgACgAMABAACgANAAQAAgD7//r///8AAAEABAAAAAcA+P/1/+T/3P/X/9f/4//q//r/AgANABAAFAAOAAkA+f/u/+j/6v/u//b//f8CAAgADQAWABgAFQARAAcACQD7//j/7f/o/+v/6v/z//b/+P8KAAcAFQAMAA4ADgAMAAoACAALAAgACQACAPz/+//2//7/AgAEAAwADQAUABAADAACAP3/+P/7//n/+//4//b/7//u/+7/+P8AAAkACgANAAgAAwD+//n/+f///woAEwAgABsAIgAUABIABgACAAUAAwATAAsAEAAJAAcADAAJAAwACQAEAP3/8P/o/+P/5//s//z///8KAAwACwAIAPz/+P/5//z///8AAAMABQAJAAcACAADAAgACAANABAADwALAAsABQAMAAgACAD///z/+P/3//n/AAAKABEAFAARAAkAAQDx/+3/5v/r/+//8v/5//v///8AAAMAAgAJAAAA/v/x/+3/8P/2/wAACgAJAA8ABwAHAAIA/v/8//7/BQAHAAoABAABAP3//P/8/wAAAAD8//T/7P/p/+n/6//0//n/AAAGAAAAAgD2//X/8//3//r/AAAAAAAA/P/7/wIAAAAPAAwAFwARAAkAAwD3//H/7f/v//n//v8AAP7/9//0//X/+P/+//7//////wMAAAAHAAgADAAJAAYAAgD///7/+//+/wEAAAAJAAcABwAHAP3//v/v/+v/6P/z//n/BQAJAA0ADQANAAkABwABAP//+v/8//P//P/5/wMABgAIAAoABwAFAAAAAADz//T/8//8////CQALABQADwAIAAQA/v8AAP7/+v/+//X////+/wUAAQAGAP7/BgD3//r/7//0/+3/9v/2//z/BwAJABUAEAASAAoABwACAAIACQALAA4ACQAIAAYAAQABAPr//v/4////AAADAAYA//////n/+P/4//n/+//6//7/+v8BAP7/CgAFAAwABQAFAAIA/v/8//r//f/6/////f/+/wEA/v8DAAAAAQACAAQABAAIAAcABwAIAP7//f/4//v/AAACAAMABgABAAYAAAD//wAA/v8BAP7/BQACAAgAAwADAP/////6/wAA+/8EAP3/AwACAAYACwAMABMADAAOAP//+//3//X/+//9/wEABwAFAAkAAQAEAP//AQD6////+v8BAP3////9//3/AAAAAAAAAQAAAPz/AQD7/wQACwANABIACQAHAP7//v/7//3/+//9//z//v/8//f/+//9/wcACgAKAAYAAAD5//j//P8BAAgACQAAAPv/8P/z//r/AQAPAA0ADwABAPX/7f/l/+r/9f/8/wsAAAAEAPr/+P/0//f///8QABEAGAAMAAUAAQAFABIAHAAhABoACwD2/+H/4P/f//T/9v8BAPj/7f/g/9X/0//Z/+X/7//5//f//P8AAAgAEAAcACAAKQAeABoADwAMAAkACgAKAAwADgAJAAMA+v/u/+v/5P/q/+j/9P/u//b/8P/0//r/AAAFAAcA///6//D/7v/z//3/CQAPABAABwD///L/7//z//X/AwACAAoABwAHAAkACgAMAAwACwAIAAcA///9//b/9//3////BQAJAAgAAgD2//H/4//p/+f/8v/2//z//f/7//z/+/8BAAUADQARABUAEQARAAwAEQAKAA4ADQAOABYAEgATAAgAAQDy//D/4v/j/9v/5f/e/+b/4v/s//X/BAANABYAGgAVABUADAAJAAcABQALAA0AEAATABEAEgAOAAgABQD8//3/+P/2//D/7v/n/+f/5f/m/+//9v/9/wcACAAQAA0AEAAJAAkAAgACAAAAAwAGAAcAEAANABMAEgANAAwABQADAP7/+//3//n/+f8AAAAABAADAAUA/v/+//j/9v/3//r/+/8FAAIACAAEAP//+f/2//D/9P/3//3/BwAMAA8ADQAHAAIA/f/8//v//v8GAAsAEAASAAwACwACAAEAAwD6//3/7v/x/+j/7//v//z/AAAGAP///f/v/+n/5v/l//P//v8LABYAGwAWABcAAwABAPX//P8CAA0AEwAYABgAEgAMAAEA/v/t/+z/3f/i/+H/6//4/wUADgAVAAoACAD2/+7/5//i/+f/8//+/xIAGwAoACgAJAASAAQA9P/u/+z/8v/1/wQABwATAA4ACwABAPr/8f/s/+j/7f/z//3/CQARABcAGQASABMAAQAAAO7/8f/o/+//7//+/wMADgAQABAADgAJAAQA+//2/+//8P/0//3/BgATABYAGgAXABEACQADAPb/9v/q/+z/6//z//n/AgAFAAgABgAAAPf/9//t//X/8v/3/wQABwATABQADwAPAAAAAAD1//j/+P8FAAgAFgAVABgAFAANAPz/8f/b/9v/3f/u/wAACQAUAA8AEwAMABEADgAFAPb/4f/a/9f/5v/z/w0AGwAnACIAGwAPAAYA///4//X/8P/0//T/AAAFAAsACwAFAP7/9//t/+r/4f/p/+r/+f8HABgAIAAaAAgA8//j/97/4f/o//b//P8MABcAKgA0ADYALAARAPn/2f/M/8j/1P/o////FgAlACsAKAAYAAsA8//h/9b/0v/k//P/CwASACAAHAAgABQADgD7//L/4P/h/+n/9v8KABEAEQAMAPv/8//t/+v/8v/2//z/BgAJAB0AHQAnABsACwACAO3/8f/w//v/BQASABoAHAAcAAkA///h/9j/zf/W/+T/9/8EABEADgAOAAEA///6/wIABAAKAAwACgATAA4AEAALAAQAAgD+/wEAAQAEAAYAAwAHAAIABgD///3/7//t/+T/6v/y//7/DwAUABkAEwAOAAUA/P/3//H/8v/2//3/BgAKAAwACgACAAAA9//9//v/BQAGAAwACAAFAP//+v/4//L/9v/z/wAABgASABcAFQAOAAEA9//p/+b/5f/p//X//P8LABIAGwAZABMACgD5//j/6f/y/+///f8EAA4AFQAYABUAEQAGAPz/8v/q/+z/7f/4//7/BQAFAAQA/v/5//X/9f/z//r/+f8CAAUADQAOAA8ABwACAPr/+f/6/wAABgAJAA0ABgAIAAEA///5//T/7P/s/+j/8P/w//7///8JAAYACwADAAYA/f/+//b/+v/2/wEAAwAJAA4ADAALAAgABQAGAAQABAD+//z/+f/3//n/9v/8//j/AAD7////AAABAAUA//8AAPb//P/2//z/AgACAAgABgAGAAkABwAGAAYAAAAHAAEABgACAAMAAgAAAP7//f/4/wEA+v8EAP7/AAACAP//BgAAAAcAAAABAPv/+P/5//f//P8BAAUABwAIAAYABAADAP3////+//7//v8BAAQABgAHAAIAAwACAAEAAwABAAAAAwD9/wEA+/8BAP//AQACAP3/AAD3////+/8BAAIAAAAFAP7/BQD6/wEA+/////////8BAAQACQALAAcACQD+/wQA/P/+//7/+//9//z///8CAAUABgAEAAMA/P////r////8////+/8BAP7/AwAFAAUABwAHAAYAAwAAAPz/AQD6/wEA9v8AAPr/AgD//wIAAQAGAAMABQAEAAMAAwAAAPv/+//3//v/+//+/wMAAQAGAAMA//8BAPj//P/1//v/9P/8//f//v///wEAAgABAP3/AQACAAYADAAIAAgABgAAAAAA/f/9//z/+//2//v/+f8AAP//AwAAAP7/+v/0//f/8//8//b/AQD6/wUAAwALAAkADQAFAAoAAQAHAAcABgAMAAYABQAFAAAAAQD7//f/9P/v//X/9f/+/wAABwAEAAYAAAD//wEAAAACAP3//P/5//f/+v/5/wQABQAPAA4ADgAJAAMAAAD5//v/8//4//b/+//+/wAAAgAEAAQACAAEAAcA/f/9//f/8//6//X/AQD+/wIABQAAAAAA/f/9//7//v/+//////8DAAQACgAMAA0ACgAJAAQAAwABAP//AAD5//z/+v/8/wEAAQABAAMA/v/+//v/+f/3//j/9v/5//n//P8AAAAABgABAAgAAgAHAAYABwANAAgACwAHAAgABgALAAcABQAFAPr//P/y//T/9//6/wUA/v8CAPz/+f/7//T/+f/y//z/9/8BAP7/BwAGAAkACwAHAA4ACwANAAoABQABAP//AAAAAAMAAgAEAAAA/P/+//v/AwACAAYAAgACAPz//f/4//n/+P/3////+f8EAAIABwADAAcA/P8FAPv/AgD9/////f///wEABAAFAAcAAQAFAPv/BAD+/wMAAQABAAEAAAD+//7/AQADAAYAAwAAAP7//f8AAP7/BAADAAEAAgD7//r//P/1//z/+/8CAAQACAADAAMAAQD7////+f/8//7/AAAEAAQABwAGAAsACAAMAAQABgAAAP///P/6//j/+v/4//j/+P/y//j/9v/5//3//P8AAAMAAQADAP//AgD+/wAA+v/9//r/AAAEAAYADAAKAAkABgD+//v/9f/3//P/+v/z//v/9/8DAAMAEAAJAAwAAgAAAPv/9//9//b/BQABAAYABAD7//z/9P/2//T/9f/6//j/AQD9/wQAAAABAP//BAADAA0ABAAPAAcADgANAA4AEgAJAAcA+f/4//H/8P/x//L/+P/5/wAA+//6//L/8f/u//X/9P///wMAEQANABQACwAOAAoACwADAAAA9v/4//b/AwD//wsABgAGAAMA+//7//f/+f/3//r/9f/5//b/+v/0//j/8f/9//v/AQACAAYABAAGAPv//v/7//7/AwD9/////P/8/wAAAQAGAAkABwAGAP///P/6//3/////////9v////b////9//n/AgDy////9/8BAAUABAALAAIADAAEAAwACAAEAAQA+v/+//r/AgAEAAUAAwD///3/AAAAAAMABwABAAUA/v8BAP//AAD+/wEA//8FAAQACAAIAAUABQABAAQAAgAEAP///f/3//r/+//7/wIAAAAJAAYABwAIAAQACwALAAoACgAEAAcAAgD+//v/9f/1//X/9f/8//v//f/9//v/AAD//wMAAAD///z////5//7/+v8DAAUADAALAAoABgAIAAcABAADAAAA/f////z//f8AAP7/BAD//wAA+//9//r/AQD//wMAAwAFAAUACQAEAAgA//8CAP3/AwD7/wEA+v////z//f8BAAQABwAIAAwACQANAAsADAAMAAoABwAIAPz/AQD2/wEA+f8AAPz//f8AAAAAAAACAPr////1//X/8f/0//b/AgD8/wcAAgAIAAUA/f/8//T//////wQAAgAEAAMAAwAFAPz/AgD6/wAA/P/9//3//v8AAAUAAwAIAP7/AQD2//n/9v/2//b/8//5//3/AgAIAAsABwAHAPn/+//0//T/9f/6//7/CwALABQAEAAPAAwACAAEAAQAAgAGAAoABgAEAP7//P////z/AgAAAAoAAwADAPj/9P/7//n/AQACAAMABwABAAMAAwAOAA4AEQAKAAUABwD+/wMA+P8AAP//BQAFAAUA//////j/9v/1//n/+/8AAAAAAAD9//n/8//y//L/9P/3//X/9//3//z/AQD9/wMAAAAFAAIABQABAP7//v/7//z//f/5//////8EAP//AQAEAAMADwAFAA0AAAAFAPj//P/z////AAANAAgACQABAPf/+P/r//T/9v/+/wEAAQD///7//v8FAAgAEQATABIAEQAGAAUA+v/8//f/+P8EAAsADwAOAAYACAD///X/6P/l/+n/7v/y//b/+//+/w0AEQAUAA4AAwD7/+//6v/x//n/BQANAA8ADgAMAAIABgD7/wUA+f8BAPX/+P/7//3/BgAGAAcAAQD7//v/8v/v/+r/7P/0////BgAQABUAHgAVABIA/f/7//n/9//5//z//v8DAAUADQAOABEACwAKAAEA+//5/wIA//8HAAQABQD///j/9f/w//H/7//4//z//v8EAAkAEQALAAcA+//8//T//f8AAAcACQAIAAQAAwD+/wQABgAAAPr/9f8AAAkABgAAAPb/8P/s/+v/6v/w//f/AgAIAP7/+v/z//r/8v/0//T/+/8EAAUAAAAFAAgACwAEAAAAAgAKAAsADAACAA8ACAAPAAcABAAAAAcABAAEAPn////6/wIAAQADAAYAAwABAPr/+P/2//z/+/8AAAIAAgAEAPv/AwAEABEAFwAZABQACQAEAAEAAAAEAAUABwAPABIADAAGAPT/8f/s/+f/6P/x//n//v/6//H/5//q/+n/9P/1////AAADAAEA//8EAAYACAAKAAgA/v8BAPb/AgD//wcACgANAAoABgD+//j//f/6/wEABgANABIAEQAKAAAA9//3/wEACAALAAYAAgACAP////8FAAYADQAKAAAA9//r//D/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+v8KAAgAAwDn/9D/uf+q/6H/lf+U/5r/r/+6/8//2P/m//D/9f/9//b/9f/i/9b/xv/B/8j/0v/e/+r/9/8BAAgABAAFAAMABgACAP3/8v/y//r/AQAOAAsAEwAVACMALQAwADAAKQAuADEAMwAqACIAHgAnAC0AMwApACgAJgAxADgAPQAzACUAEwAIAAMAAgADAP//BQANACIALAA0ACkAJwAgABMACADu/+b/4f/l/+j/4f/n/+b/9f/9/wAA/v/z/+n/6//p/+7/4//W/8r/y//d/+f/7P/e/+L/5P/2//b/9P/o/+H/2v/P/8D/sf+x/7f/0v/l//7/BAAHAAUAEgAVABoAAwD8//f/DAAaAB8AGAAgADEASwBOAD0AJQAPABAADAANAP7/9//u//X/9f8AAAoAEgAdACUAJwAkABcADgAKABsAHQAgAA0A/P/+/wMADQAHAAMA/v8GAAYACAAEAAkACQAAAPT/4f/f/9r/3f/Y/9P/4P/r/wEABgAEAPn/8//t/+z/6v/j/93/2//c/+P/5v/q/+3/8f/8//r////6/wEACgAQABUAFAATABYAFwAdACAAHgAgABQAEAAKAAsABAD2/+z/6//5//3/AQAAAAMAEgASABgAEQAYAB0AHgAJAPn/8P8AAAwAGAASABYAEQARAAwACQAHAAsABgD9//j/9v8AAP3/8v/o/+P/5v/o/+v/6P/r//f//P8EAPz/9f/v/+X/3P/a/9j/4//m//f///8GAAgACgAHAAgABAAEAPb/8f/m//T/9v8CAAYACAAMAAkACQAFAAAA+//5//z//v8CAAEA/v8FAAgAFwAfACAAIgAaABgAFQANABUADgAPAAMA9//5/wEACQATAA0AGgAYACEAFgAVAA0ADgADAPn/5//p/+z/+/8GAAcAFQARABMAAgD5/+7/7P/i/+P/6//0////+v/5/+3/8v/s/+z/3//j/+H/+v/0/wgAAQASAAkACgD7//j/9P/0/+//5f/c/9f/2v/g/+r/7v/7////CAAEAAgABQAQABEAGAAZABYAGQAYAB8AEwASAAkADwAOAA8AEgALAAwABwD///3/9P/5//v/+v/+//3/BAACAAAAAwADAAsABwAFAAEAAwANABAAEwAKAA8ADQANAA0AAgAFAP//BwD///7//P/8/wEA/v8AAP7//f8AAAAACQABAAEA9P/2//b///////f/8f/p//D/8//z/+j/3//a/97/7v/r//n/8f8AAAQADQAPAA4ADQAOABAACwAHAP3/9//1//P/8//0//L/8//4//j//v/2//b/7v/0//f/+f/9/wEACAAPABAAFQATABYAFAATABAADQAKAAgABQAAAAQA//8DAAAAAgAEAAYABwAJAAsAEgAPABIACQAJAAgACgAMAA0ACQAMAAoADAAGAP7/+v/0//j/9//9//b/8v/0//b/BAAJAAsACQACAPv/+f/3//j/9P/1//H/9P/0//f/9//4//X/9v/y//X/8f/y//L/8//6//7/AAD7//b/8v/z//X/8v/z//f/+v8BAAAAAAAEAAYADwAKAA0AAgACAPr/+P/0//b/9v/z//r/9P8DAAgAEAAXABMAGwAUABkADwANAAUACAAIABEAEwAYABkAHQAWABkAEAAUAAUABwD4//v/9v/7//3///8BAAoACwATAA8ADwAJAAIA+P/4//L/+f/y//n/9f////3/AAD8//j/+v/0/+//5f/j/+T/7v/w//L/9P/y//3/AAAEAPv/9P/n/+3/6f/z/+7/9v/y//j//f/9/wEA///7//n/+P/9//z//v/7//z/BAAHAAgACgAMABMAFwAXABIADwAPAA8ADAANAAkADAAKAA0ADAAQABIAEQAMAAMAAAAAAP//BQAEAAsADAAOAA8ADwANAAwACwAEAAEA+//4//7/+P8FAP7/CAABAP//+P/z/+7/8//s//L/6//y//f/AQAAAP//+v/5//b/+v/1//n/8v/5//f/AQADAAUA/f/1/+r/7//2//j//v/2//v/+v8CAAUABQAIAAMACAABAAMA/v/8//r/+f/9/wAAAAAAAAAABwALABMACAAMAAMABgAFAAMA//////r/BAADAAwACAAMAA4AEQAXABUADgAJAPz//P/3//n//v/8/////f///wIABQACAP7/+f/7//3//f/5//b//f///wwACQAOAAYACAABAAUA+//+//D/7//v//X////9//v/+P/7/wQABAAFAPT/+P/z/wAA+v/9//f/AQAGAA4ADAAHAAYABgADAAMA9f/2//b//P8DAAQABAACAAIA/v8GAAQABwADAPv/+v/9/wMABAAHAP//BQABAAoAAQAEAAAA/v/+//L/+P/z//r//v/8/wEAAQAEAAcABAD///z//f/6////+v8BAAMABQADAAUA//8CAAAAAAD///z/9//5//P/+P/5//7/AAADAAMABAAGAAUACQAHAAUAAgD8/wMABQAPABEADAAPAAgADwAIAAoA/P/7//X/+f/8//v//v/8/wMABgANAAkACAAFAP//AgD0//v/9P/+//7/BwAGAA4ACgAQAAYACQD5//7/7P/w/+r/9v/5/wAA9//9//j/AgD4//r/7f/0//D/+f/6//r////+/wcABAAHAAMABwAAAAAA/f/7//7/+v/8//v/9//6//T/9v/6//j/BQACAAQAAwAFAAkADgAHAAUAAgABAAMAAgADAAYACgAOAA0ADQAFAAQABQD9/wIA+f/9//7/BQAHABMAEAAYABQAFQAQAA4ABwAFAAAA+v/9//n/AAD/////AQAAAP///f/4//b/9f/x//H/8P/w//b/+v/7//3//P8DAAIABAABAPz//P/0//D/7f/r//L/8//1//f/+//9/wMA/v8AAPv//P/5//r/+v/4//v/+P///wAACgALAAsACQAIAA0ADQAKAAIA/P8AAPz/AgD+////BgALABMADwARAAoADgAOAAwACgAHAAQABgAIAAsADQANAAgACQAGAAYAAAD7//X/9//4//z//P/9//7///8EAAQAAAD9//j/9v/2//H/8v/x//f/9v8AAPj/AQD3//7/9//8//f/9v/y/+//9f/0//v/9/////n/BAD7/wQA+v/+//z//f////z//v/5////AQAIAAUABwABAAQABgAGAAUABgACAAYABgAEAAkACQAPAAkADgAFAAkABgAIAAMABQADAAgACQALAA4ADAANAAkABgADAAMAAAACAP3//P/9//z/AQD/////AQD8//z/+P/4//b/+v/5//b//P/x//3/9f/+//f/+v/5//n//P/6//z/+f/9//n/+v/8//j/AQD7/wAA/P/8/wIA+v8BAPj//P/2//r/9/8CAP3/BAD+/wIAAwAFAAYABAAFAAAABwADAAYAAQAEAAgACQAHAAYAAQAHAAQACQAIAAYABQAGAAYACgAJAAcABQABAAAABQACAAMA/f8EAAMACAACAP7/+f/7//n/+P/3//P//P/6/wQA/P8CAAAAAQAEAP/////6//z/+P////z/AAAAAAEA/f8DAPz//f8AAPX/AADz//v/9v/6//z//P8BAP//AQADAAEAAwACAP7/AQD9//7//v/7//z////9/wYA/v8EAAUABgAJAAYAAwD+//7//P8AAP3//v/6/wAAAgAHAAsACQAIAAUACAADAAoA/v8FAPv////9//3//v///wQABAAHAAIABAABAAQAAAD8//n/9//2//v/+v///wMAAAAFAAQABwAFAAQA///+//r/+P/6//b/+v/5//7///8BAAIABwAGAAgAAQABAPv/AAD6//7/+v/4/wEA/P8HAAUABQAIAAQAAgACAP///P/6//X/9v/5//v///8DAAMACAAGAAgAAwADAAIA+/8BAPr//v////3/AwABAAUABAAIAAQABwAAAAEA+v/+//v/+//9//j//////wAABAABAAQAAgAFAAAAAgD+/wAA+/8BAPr/AQD6/wEA//8EAAMAAgAAAAIA/v8EAAAA//////z///8AAP7/AQD6/wIA+/8HAAAABgACAAMAAgAFAP7/AwD5//3/9//8//r/AAD8/wMABAAGAAkABAAHAAIA//////r/+//5/////P8KAP//DwACAA0ACAAHAAYA/P/8//f/+f/5//v//v/9/wYABQAHAAgAAwAEAP3////7//r/+P/4//r//P8CAAAABQACAAQABQAEAAIA/f/6//n/+f/7//n/+f/8//7/BAACAAYAAQADAAEA///9//3/+v/8//r//v/8/wIA//8EAAYAAwAFAAAAAgD+/wEA/P8AAP7///8EAAAABwACAAcAAgAEAAIAAwADAAMAAwADAAMAAgABAAMA//8HAP3/BQD+/wMAAQACAAEAAAADAAAAAAACAP3/AgD8//7////8/wIA+/8CAP3/AQAAAAMAAQAEAP3////9//3/AAD+//z////9/wIAAgD//wEA+/8CAPv//v/3//7/+f////z//////////////wAAAAAAAP//AAD//wMA//8DAP//BAAAAAQA//8BAP//AAAAAP3/AQD//wEAAgD8/wQA/P8EAP3/AgD+/wMAAwABAAQA/v8DAP7/AAAAAAAAAQABAP//BAAAAAcAAQAGAP7/BAAAAAQAAQADAAEABQABAAUAAAAHAAAABQD//wEAAAD//wAA/f8AAPz/AAD8/wEA//8CAAAAAwD8/wEA/f8BAP7//v////3/AAAAAP//BAACAAAAAQD//wEAAgD///7/+v/7//r/+//+//n/AQD9/wAAAAABAAIAAgD+//7/+//6//v/+//+//7/AAD+/wQAAAAIAAEAAQD+//3////9/wIA+/8CAP//AQAFAAQABQAGAAEABAAAAAIAAAABAAEAAwABAAQAAgAHAAYACAAFAAMAAQADAAIAAQD///z//v8BAAIABAAEAAMABQAGAAcAAgAFAP3/AwD+/////f/8//v/AQD8/wMA+/8AAP7/AQD/////+//9//r//f////r/AAD5/wAAAQD//wUA+v8CAPj/AQD5//7/9v/7//b////4/wAA+v8AAAEAAAACAP7/AAAAAP//AQD///7/////////BQD+/wUA//8EAAQAAwAHAAAABAADAAIAAwABAP//AAABAAQABQADAAgAAwALAAMABgABAAEAAQD+/////P/+//7/AgD+/wUA/v8HAP//BQABAAEAAgD+/wAA/v/8/wEA+/8CAP//AQADAAIAAQADAAAAAwD8////+v/9//3//P/9//3///8BAAAAAQD//wEAAAD//////v/8/wEA/f///////f8BAAAAAAD+/wIA/P8DAP////8BAPz/AgD9/wIA/P8DAP7/AwAAAAEAAQABAAMAAwAAAAMA/f8CAPz/AwD9/wAA/v/9////AgD7/wUA+v8DAP7/AQADAP//AgABAAEAAQACAP//AwD//wAAAQABAAIAAgAAAAUA//8EAP//AAABAP7/AwD8/wAA/v///wAAAQD//wIA//8CAAAAAwD//wIA/P////7//v8AAP7/AAABAAAAAwABAAIAAQACAP3/AwD6/wAA///8/wIA/f8BAAMAAAADAAIAAAADAPz/AQD7/wAA+//9//z//P/+//////8BAP///f8CAPr/AQD7//z////5/wIA+f8DAP3/BAD9/wQA/f8DAAAA/////wAA/f8AAAAA/f8DAP3/AgD//wIAAAACAP//AQABAP7/BgD7/wUA/f8CAAEAAgABAAIAAQADAAIAAQACAP//AwD//wIAAAAAAAEA//8DAAEAAQABAP7/AgD//wMAAAAAAP7///8BAAAAAQD9/////f///wEA//8AAP///v/+/wIA+v8DAPr//v/9//z//v/9/wAA//8AAAIA/f8DAP//AQD///7/+/////r////8////AAD//wMA//8CAAAAAgD//wAA/P/9//3////+/wAA//8BAAAAAwACAAQAAAACAP//AAACAAAAAgABAP//AwABAAUABQACAAMAAQACAAMAAAABAP7/AAD//wAAAAAAAAEAAQACAP//AQD+/wEA/v///wAA/P8AAAAA/v8EAP7/AgAAAP//AwD+/wIA/f8AAP//AQD//wIA//8CAAEAAQAAAAEA/v8EAP3/AgD///7/AwD8/wUA+/8EAPz/AAABAAAAAAABAPz/AgD//wEAAQD//wAA//8CAAEAAQABAP//AQACAP//AgD+/wIAAAABAAIA//8CAP//BAD+/wQA/v8BAP//AwD+/wIA/v8CAP7/BAD+/wEAAgD+/wQA//8CAAAAAAABAP//AQAAAAEAAAABAAIA//8DAP3/BAD//wMA//8AAP//AAABAP7/AgD7/wQA+v8FAP3/AQABAP//AAACAP7/AgD+/wEA/v8AAAEA/f8FAPz/BQD+/wIAAQAAAP//AgD9/wIA/f/9/wAA/v8AAAEA/f8DAP7/AQAEAPz/BgD7/wEA///+/wIA/f8BAP//AQABAAIAAQADAP//AwD+/wMA+/8EAPz/AwD+/wEA//8DAP//BQD+/wIAAAD9/wQA/P8CAPz/AQD9/wEA//8AAAAA//8AAAAA//8BAP////8BAP3/AQD//wAAAAD/////AAD//wAAAAD+/wEA/f8BAP///v//////AAABAP3/AQD9/wMA/f8DAPz/AgD8/wIA/v8BAAAA/////wIA/v8EAP7/AgD//wMAAAACAAAAAgD//wMA/f8CAP7/AQD//wEAAAABAAAAAAABAP//AQD+/wAAAAD9/wIA/v8AAAIA//8DAP//AAACAP7/AgD///7/AQD///3/AwD8/wMA/v8AAP//AQD//wAA/v///////f8CAPz/AgD9/wEA/v8CAP3/AQD///7/AAD///7/AQD8/wIA/v8CAP3/AgD+/wAAAQD+/wAAAQD8/wYA+/8FAP3/BAD//wIAAAABAAAAAQD+////AQD+/wMA/P8CAP//AQABAP7/AQD+/wIA/v///wAA//8BAAEA//8CAAAAAgABAP//AgD+/wEA//8AAP//AAD/////AAAAAAAAAQD//wAA/v8AAAAA/v8CAPz/AwD8/wMA/f8DAP7/AQD/////AQD+/wEA/f8AAAAA/v8CAP3/AwD+/wIA//8AAAIA/v8CAAEAAAABAP//AwD+/wQA/f8CAP//AAABAP7/AwD8/wQA/f8CAAAA/v8EAPz/AwD+/wAAAAAAAAEA//8DAP7/BAD+/wQA//8DAP//AQD//wIA/v8DAPz/BAD//wIAAQD//wQA//8AAAIA/v8CAAAA//8DAP7/AgAAAAMAAQABAAAAAgAAAAAAAQD+/wEAAgD9/wQA/v8CAAIA/v8DAP//AQABAP//AQABAAAAAgD//wMAAQAAAAMA/v8DAP7/AAACAP3/AwD9/wIAAQD//wMA//8CAP//AQD//wEAAAD//wIA/f8EAP7/BAD//wEAAgAAAAIA/v8BAAAAAAABAP//AAACAP//AwD//wMA/v8EAP3/BQD9/wMAAAAAAAIAAAAAAAMA//8DAP//AgAAAAIAAQAAAAIAAAADAP7/AwD+/wIAAQAAAAAAAQD//wIAAQAAAAEAAAACAP//BAD9/wIA//8BAP//AwD+/wIAAAAAAAIAAQABAAEAAAACAP7/BAD9/wIAAAD+/wQA/P8FAP7/BAD//wIAAAAAAAIAAAD//wAA/////wIA//8AAAIA/v8DAP//AQABAP7/AwD8/wIA/////wIA//8BAAIA//8BAAEA//8CAP7/AgD+/wEA/////wMA/f8DAP3/AQAAAP//AQD+/wAAAQD8/wMA/f8CAP///////wEA/v8CAP3/AgD+/wIA/v8CAP//AQAAAAAAAAAAAAAA//8AAAEA/f8EAP3/AgD//wEA/v8EAP3/AQD//wAAAAABAP7/AgD//wEAAAABAAEA//8BAAEA/v8CAP3/AwD9/wIA/v8BAAAA//8CAP7/AwD8/wMA/v8AAAEA/P8CAP7/AAD//wAA/v8BAP//AAD//wAA/v8AAP7/AQD+//7/AAD+/wAA///+/wEA/v8BAP7/AAAAAP////8AAP3/AQD9/wEA/v8AAP3/AQD9/wMA/f8CAP3/AQD+/wAAAAD+/wEA/P8DAPz/AwD+/wAAAgD+/wEAAQD+/wMA/P8CAAAA/v8DAPv/BAD+/wAAAQD//wEAAAAAAAAAAAAAAP//AQD+/wEA/////wEA/v8CAP7/AQAAAAEAAAD//wAA//8AAAAA/v8BAP7/AgD9/wMA/v8CAP7/AQD+/wIA/v8AAP///v8DAP3/AgD///7/AwD9/wMA/v8BAP7/AgD9/wMA/f8CAP3/AgD+/wAAAQD9/wIAAAD9/wUA+f8HAPr/BQD8/wMA/f8CAP//AAABAP3/BAD9/wIA//8BAP//AwD9/wIAAAD//wAAAQD+/wIA//8AAAAAAQD//wMA//8BAAAAAQAAAAEA/////wMA/P8EAP3/AgD//wIA/v8EAP3/BAD8/wMA//8AAAEA//8AAAIA//8CAP//AgAAAAEAAQAAAAEA//8AAAAAAAAAAAAAAAAAAAEA//8DAP3/BAD+/wEAAAD//wEAAAD//wEA/v8DAP3/BAD9/wIAAAD//wIA/v8BAP////8AAP//AQD+/wEA//8AAAAAAQD+/wMA/f8CAAAA/v8CAP3/AgAAAP7/AgD+/wEAAAABAP//AQD+/wEAAAABAP7///8BAP//AAABAP//AQABAP//AgAAAAEA//8BAP//AQD//wAAAAAAAP//AgD9/wQA/v8CAP//AAACAP3/BAD6/wYA+/8DAP7/AQD//wIA/v8DAP3/AgD//wAAAAD+/wIA/P8DAPz/AwD9/wIA/v8CAP7/AAAAAAAA/v8BAP3/AQD///7/AgD8/wMA/P8DAP3/AwD9/wEA/v8AAP//AQD9/wIA/f8BAP///v8CAP////8BAP7/AAACAPz/AgD///7/AgD9/wIA/v8AAAEA/f8EAPv/AwD///7/AgD8/wMA/P8DAPz/AQD/////AQD+/wAAAQD9/wMA/v8AAAEA/f8CAP7/AgD7/wUA+v8EAP7///8BAAAA/v8DAP3/AAABAP3/AwD8/wIA/f8CAP7/AQD//wAAAAAAAAAA//8AAP//AQD9/wIA/f8BAP////8AAAAA//8AAAAA//8BAP7/AgD8/wQA/P8CAP7/AAAAAAAAAAD//wAAAAD//wEA/v8BAP7/AQD/////AQD9/wIA//8AAP//AAD//wEA//8AAP7/AgD+/wEAAAD9/wMA/f8BAAAA/v8CAP7/AQD//wAAAAABAP7/AwD7/wQA/f8BAAEA/f8CAP7/AQABAP7/AwD9/wIA//8AAAAAAAD//wEA//8AAAEA//8CAP7/AQAAAAEA//8CAP3/AwD+/wEAAAAAAAAAAAABAP//AAABAP//AgD9/wMA/v8DAP3/AQAAAAAAAQD//wAAAQD//wEAAAD//wIA/v8BAAAAAAAAAAAA//8CAP3/BAD8/wMA//8AAAAAAAD//wMA/f8CAAAA/f8EAP3/AQABAP7/AgD+/wEAAAAAAAAAAAAAAAAAAQD+/wIA//8AAAEA//8AAAAAAQD//wIA//8BAP//AgD+/wMA/v8BAAAAAAABAP//AwD9/wQA/P8FAP3/AwD9/wQA/P8FAPv/BAD+/wIA//8CAP3/BAD+/wEAAQD//wIA/v8DAPz/BQD7/wUA/f8CAP//AAACAP7/AwD9/wMA/v8DAPz/BAD+/wEAAQD+/wIA//8BAAAAAAABAP7/AgD//wEAAAD//wEA/v8CAAAA//8BAAAAAAAAAAEA//8CAP//AAABAP7/AgD+/wEAAAAAAAAAAAAAAAEA//8CAP3/AwD+/wIA/v8AAAEA//8CAP7/AQABAP//AQAAAAAAAQD//wAAAQD9/wUA+f8IAPn/BQD+/wAAAQABAP7/AgD+/wEAAAAAAP//AQD//wEAAAAAAAEA/v8DAP7/AQAAAP//AgD+/wEA//8BAAAAAAD//wIA/f8FAPv/BAD9/wIA/v8DAPz/BAD9/wIA/v8CAP7/AgD+/wIA//8BAP7/AQD//wEAAAD+/wIA/v8CAP7/AgD9/wQA/P8DAP7/AQD//wEA/v8DAPz/AwD+/wEAAAD//wAAAAAAAAAAAAD+/wMA/P8EAP3/AQD//wAAAAAAAAAA//8AAAAAAAAAAAAA//8BAP//AAAAAP//AQD//wAA//8BAP//AQD//wAAAAAAAP//AgD9/wMA/f8BAAAA//8BAP//AgD9/wMA/f8CAP//AQD+/wEA//8BAP//AAAAAAAAAAAAAAAAAAAAAAAAAAD//wIA/P8FAPv/BAD9/wIA/v8CAP3/BAD8/wMA///+/wMA/f8CAP//AAAAAAAAAAD//wEA//8BAP//AQD+/wEAAQD+/wIA/v8BAAAAAAD//wIA/f8DAP7/AQAAAP//AQD//wAAAQD+/wMA/P8EAPz/AwD/////AwD8/wQA/P8DAP7/AgD+/wIA/f8DAP3/BAD7/wUA/P8CAAAA//8CAP7/AQAAAAAAAAABAP3/BQD7/wQA/f8DAP3/BAD8/wMA/////wIA/v8BAAAAAAAAAAAAAAAAAAEAAAAAAP//AQAAAAEA//8AAAEAAAABAP//AAACAP7/AwD9/wMA/f8DAP7/AgD+/wIA//8CAP7/AgD//wEAAAAAAAAAAQD//wEA//8BAAEA//8BAAAAAAABAAAA//8CAP//AQAAAP//AgD+/wIA//8CAP7/AgAAAP//AgD//wAAAgD9/wMA/v8CAP//AQD//wIA//8CAP//AQAAAAEA//8DAPz/BQD8/wMAAAD+/wUA+/8FAP3/AgABAP7/AwD+/wEAAQD//wAAAwD8/wQA/v8BAAEA//8BAAEA//8CAP7/AgD//wEAAAAAAAAAAQD//wEAAQD+/wQA/P8EAP3/AgAAAAAAAAAAAAAAAAABAP//AgD+/wEAAQD//wIA/v8CAP//AQD//wEAAQD+/wMA/f8CAAAAAAAAAAEA//8CAP7/AgD+/wMA/v8CAP//AAABAP//AQABAP3/BAD9/wIA//8AAAEA//8CAPz/BQD7/wUA/P8CAP//AQD//wEA//8BAP//AQD+/wMA/f8DAP3/AgD//wEA/v8CAP7/AgD/////AgD9/wMA/v8BAP//AQD//wAAAQD//wEA//8AAAAAAQD//wEA/v8CAP//AAAAAP//AgD+/wIA/v8BAAAAAAABAP//AAAAAAEA//8BAP//AAABAP//AQD//wEAAAD//wIA/P8FAPz/AwD///7/AwD+/wAAAwD7/wUA/f8BAAAA//8BAP//AQD//wAAAAAAAAAAAAD//wEA//8BAP//AQD+/wEAAAD//wEA//8AAAAAAQD+/wIA/v8CAP7/AQD//wEA//8BAP7/AgD+/wEAAAD//wIA/v8BAAAA/v8DAP3/AgD//wAAAAAAAAAAAAD//wIA/f8FAPv/BAD9/wEAAQD+/wMA/f8CAAAA//8CAP7/AQABAP//AgD9/wMA/P8FAP3/AQABAP3/BAD+/wEA//8BAP//AQD//wEA/v8DAP3/AQABAP//AQAAAP//AgD+/wIA/v8CAP//AAAAAAAAAAD//wMA/P8EAP3/AQABAP//AAABAP////8DAP3/AwD+/wAAAQAAAP//AwD8/wQA/f8CAP//AQD+/wIA//8AAAAAAAAAAAAAAAD//wEAAQD+/wEA//8CAP7/AgD+/wIA/v8CAP7/AwD+/wAAAQD//wEAAQD9/wQA/f8CAP//AAABAP//AgD9/wMA/v8CAP//AAABAP7/BAD8/wQA/f8AAAMA/f8DAP7/AQD//wEA//8CAP7/AQD//wAAAgD9/wMA/f8CAAAA//8CAP3/AwD+/wIA/v8CAP3/AwD+/wEAAAD//wEA//8BAP//AQD//wEAAAD//wEA//8BAAAA/v8DAP3/AgAAAP7/AgD//wEA//8AAAAAAAABAP7/AgD+/wEAAAD//wEAAAD+/wMA/P8EAP7/AAAAAAAA//8CAP7/AAABAP//AAABAP7/AgD//wAAAAAAAP//AgD9/wMA/f8DAP3/AgD//wAAAAAAAP//AgD9/wMA/f8CAP//AAABAP3/BAD9/wIA/v8BAP//AQD//wEA/v8CAP3/AwD+/wEA//8AAAAAAAABAP//AAD//wEA//8BAP//AAAAAAAA//8BAP//AAAAAAAA//8BAP//AAD//wEA/v8DAP3/AQAAAP7/AwD+/wAAAQD+/wEAAAD//wEA/v8DAPz/AwD9/wIA//8BAP7/AgD9/wMA/f8DAP3/AgD+/wEA//8BAAAA//8AAP//AQAAAAAA//8BAP7/AgD+/wEAAAD+/wMA/P8EAP3/AQAAAP//AQD//wEA//8AAAAA//8BAP//AQD//wAAAQD+/wIA/////wIA/f8EAPz/AwD9/wIA//8AAAAAAQD+/wIA/f8DAP3/AwD9/wIA//8AAAEA//8AAAEA//8AAAEA/v8DAPz/AwD+/wEAAAD//wEA//8BAP//AQD//wEA//8BAP//AQD//wAAAQD+/wMA/f8DAP3/AgD//wEA//8AAAAAAQD//wEA/v8CAP//AQD//wEA//8BAP//AQD+/wMA/P8EAP3/AgD+/wMA/f8CAP//AAABAAAA//8AAAEA/v8DAP3/AwD9/wIAAAD+/wMA/f8CAP//AQD+/wMA/P8EAP3/AgD+/wIA/v8BAAAAAAD//wEA//8BAAAA//8BAAAAAAABAP7/AwD9/wMA/f8DAP3/AwD9/wMA/v8BAAAA//8CAP7/AwD9/wMA/f8DAP3/AwD+/wIA/v8BAAAAAQD+/wIA/v8CAP//AQD//wEA/v8DAP3/AwD+/wAAAgD+/wIA/v8CAP//AQD//wEAAAD//wIA/v8CAP//AQD//wIA/v8BAAEA/v8DAP3/AwD+/wEAAAAAAAAAAQAAAAAAAAAAAAAAAQD//wIA/f8EAPz/BAD8/wUA+/8FAP3/AAACAP//AAABAP//AAACAP3/AwD//wAAAQD//wEAAAAAAAAAAgD8/wUA/P8CAAEA/v8CAP//AQD//wIA/v8BAAEA//8BAP//AAACAP7/AgD+/wIA//8BAP//AQAAAAAAAAAAAAEAAAD//wEA//8CAP//AQD//wEA//8CAP7/AgD//wEA//8CAP3/BAD9/wMA/f8DAP7/AgD//wEA//8AAAIA/v8CAAAA/v8DAP7/AQABAP7/AgD//wAAAQD//wEA//8CAP7/AgD+/wEAAQD//wEA/v8DAPz/BQD8/wIAAAD//wEAAQD+/wIA/////wIA/v8CAP//AAAAAAAAAAABAP//AQD//wEAAAAAAAAAAAAAAAEA/v8DAP3/AwD/////AwD9/wIAAAD//wMA/f8CAP//AQAAAAAAAAAAAAAAAQD//wEA//8BAAAA//8CAP7/AgAAAP7/AwD+/wIA/v8CAP7/AwD9/wIA//8BAP//AQAAAAAAAAAAAAAAAQD//wAAAAAAAAAAAAAAAP//AgD+/wEAAAD//wIA/v8BAAEA/f8FAPr/BAD/////AgD+/wAAAgD+/wEAAAD//wIA/v8CAP7/AgD+/wMA/P8EAPz/AwD//wAAAQD+/wIA/v8BAAEA//8AAAEA/v8CAP//AQAAAAAAAAD//wIA/v8CAP//AAABAP//AAABAP7/AwD+/wEA//8BAP//AQAAAP//AQAAAP//AQD//wIA/////wIA/P8FAP3/AAADAPz/AgAAAP//AgD/////AgD9/wQA/P8DAP3/AgD//wEA//8AAAAAAAABAP7/AgD+/wIA//8AAAAAAAABAP7/AgD//wEA//8BAP7/AwD+/wAAAQD//wAAAQD/////AwD8/wQA/v///wMA/P8EAP7/AAABAP//AAABAP//AQD//wEA//8AAAIA/f8CAP////8DAP3/AgD9/wQA/P8EAP3/AQABAP7/AgD+/wIA//8AAAAAAAAAAAAAAAAAAP//AgD+/wEAAAD+/wMA/v8BAP//AQD//wEA//8AAAAAAQD//wAAAQD9/wUA+v8GAPr/BQD9/wEAAAD+/wMA/f8DAPz/BAD8/wQA/P8CAAAA/v8EAPr/BQD8/wIAAQD9/wMA/P8DAP////8CAP3/AgD/////AgD+/wEAAAD+/wMA/f8CAP//AAAAAP//AgD9/wQA+/8EAP7/AAABAP7/AgD/////AgD9/wMA/v8AAAAAAAAAAP//AgD9/wMA/f8DAP3/AgD+/wIA//8BAP7/AAABAP//AgD9/wEAAAD//wIA/f8DAP3/AgD//wAAAQD+/wIA/v8CAP7/AQD//wAAAQD+/wIA/f8DAP3/AwD9/wEAAAD//wEA//8AAAAA//8BAP//AQD//wAA//8BAP//AQD+/wIA/f8CAP7/AgD+/wIA/f8CAP//AQD//wAAAAAAAAAA//8CAPz/BQD7/wMA/v8BAP//AgD9/wIA/v8BAAAAAAD//wEA//8AAAAAAQD9/wQA/P8CAAAA/f8EAPz/AwD9/wMA/P8DAP7/AQAAAP////8CAP7/AgD+/wAAAAA=")
+format = 1
+
+[sub_resource type="AudioStreamWAV" id="AudioStreamWAV_eolcr"]
+data = PackedByteArray("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BAD2/+j/1P/D/7H/p/+j/6r/uf/K/93/6//2//b/9//3/wEAEwAXACAAJgAuADEAHgANAOX/y/+e/4n/d/9//4j/of+y/8D/0v/g//j/FgAmADQAOwA9AEkAPgAxACQAGgAkACkAKAAiABMACQAEAAAA9//v/+T/2v/l//T/BAAHAPz/8P/v/+3//f8DABkAOgBTAGgAZQBfAFkAUABMADkANgAqACQAIQAhACgAJwAdABcADAAYAB0AHQARAP//6//x/+3//v/+/xIAHQAcABAAAAD//wgACAASABIAKgA8ADcAIgAAAN7/xf+m/4z/if+N/53/m/+x/7//5P/y//P/8P/z/wsADgAGAP7/+//5//P/4P/T/9j/4v/p//H/CQAXADIAKwAlACMAGwASAAEAAQAYAC4ATQBcAHQAdgByAEwAMQAdAAwA+//j/9j/1v/Z/+L/2//b/9n/2//f/+n/9P///wAA+P/t/+v/4f/f/9b/4P/q/wwALABLAFcAWwBLADsAIQATAP3/6//g/93/6v/2/wUAEQASABgABwD//+j/4//I/7n/n/+d/5//rP+2/9b/7/8PABsAKwAfAB4AEQAZAA8AGAAZACUALAAyACsAHQAMAOz/1P+8/7f/uv/Q/9z/8P8DABgAHwAeABMAAgD6/+r/3f/J/8P/1P/u/xAALAA7AE0ATwBRAEEAMAAXAP7/6P/X/9b/0P/N/8P/0f/f////DwAmADIASQBPAE8ANgAaAAQA9P/l/9T/yP/I/9T/3v/a/8r/vf+r/63/rv/N/+j/BwAUACEAJwA2AEEARABFADcAMQAsACwAMgA4ADMAJwASAAkA/f/7//L/6//k/+z//v8ZACgAMAAoACIADwAAAOn/1v/D/73/wf/F/9D/1//n//n/DgAbACUAJgAcAAsA9f/d/8f/tv+v/7X/1P/l/wEABAAXABIAFgAEAPr/7v/l/+b/4P/m/+v/+P8BABYAJgA2ADUAJgATAPz/6v/c/87/0f/X/+H/7f/y//P/+////wUAAwADAAIABQAQACMAPwBaAHUAeAB3AGUASwAxABQA+//l/+P/5f/x/+7/6f/k/+T/7v/t//T/AAANABQADgD9////AQADAP7/9v8DABEAKAArADUALQAoABIA/P/h/9v/2P/h/+7/AQAZACkALQAvAC0AKwAeAAMA8v/m/+T/3P/H/7z/vv/T/+P/8v/8/wwAFwAVAA0A+P/j/9T/uv+z/6v/sP+3/8L/2P/x/wEABgD+//r/AgAEAAgA///8//j/DQAVAC8AQQBUAFsAWwBZAFQAQQAnAAwA9v/p/97/0P/R/97/8f8HAA0AEgASAA8AAADw/+L/3P/j/+b/9P/5/wcAFAAVABAAAADx/+z/6//3/wMAFQAlADcAPABCAEEANgAhAAYA9//x/wEABgAOABMAGgAgACAAEgD+/+f/zv+z/5n/kf+O/5z/rP/D/9r/9f8JAAoABwACAP7/9P/i/9L/0P/V/+b/7P///xEAKwA4ADwANQAxACYAHgAGAAAA7v/h/8b/sv+r/7T/yf/e//n/HAAxAD8ANQAuACEADwD+/+r/5P/m/+v/6v/t//P/CwAUACIAHAAkAB4AJQAjACUAJQAWAA4ABQD7//f/8P/v//H/+/8JABcAJQAuACkAIQAZABUADAAKAAAABQAEAAMA+v/6//T/9v/l/+7/6v/4//f/8f/w//P/+v8AAAcAGAAeACgAIQAcAAcA+P/q/9//7P/2/wQABwAKABUAGgAdAAUA5v/H/7X/sf+u/7n/w//f/wMAIwBDAFUAXABRADwAIgALAPv/6P/g/8//1f/b/+n/AAAMABsAIQArAC4AIQAfAA0ABAD8//f/7//y/+X/4//b/+L/6P/5/wUAFgAkADIANgApAB4ABQD5/+b/5//V/93/2v/p/+7/9//2//3/8//0/+7/+P8EAA8AFgAfACkANgAyAC8AJQAbABQAAAD2/+//6f/t/+v/9f/4/wIACwARABMAGQATAAsAAwD0/+X/1P/P/8v/0v/X/+T/+f8JABoAHgAjABkADwD8/+//6P/j/+v/6v/3/wUAGQAmADAALwAtACgAHgATAAsABgAHAAIA/f/7/wAA/v/5/+7/4P/g/93/6//w////CAAOAA0AAQDt/9//xf+8/7T/uv/R/+v/DgAsAEMASABDACgAEAD2/+j/5P/i/+///v8dAC0APQA2AC0AHAD//+//1P/J/7//xP/B/83/0P/h//X/AgAXAB4ALQAtACsAHwARAP3/7P/T/87/wv/V/9n/6P/7/woAIgAlACUAIAAaABQADgACAAIACAAOABcAEQAOAAQAAwD5//X/8f/x//n/AgALABQAGwAfABcAEQAFAAAA9v/p/+L/2//d/+T/6P/w//H/+v/+/wwACgAPAA8AFQARAAwA/P/v/9//1v/M/8j/zv/b/+r/+v8IABEAGwAUABYAEAAVAAwACwAIAA8AGwAhADAAKQAyACMAIAANAP//6//i/9D/1f/H/9P/zP/V/9T/4P/s//3/BgATACAAKwAvACkAHAAJAPb/5v/b/+L/3P/w//b/EAAfADAAPQA6ADsALwAjABwAEQAKAAAA+v/y//r/+f8DAAEACQALAA8ADQAGAAQA+//1/+//4v/s/+v/+v///wUADQAUABkAFAANAAgA///7/+3/6//o/+//9v/4////BwAGAAwACQABAP3/6P/e/9P/zf/S/9n/5v/z/wUADgAeAB4AHAATAAwABQAHAAYACgAHAA0ACwAQABEAFAARABIAEQAPAAwABgAEAP3/+//3//D/7v/s/+z/7P/t/+7/8//8/wUADwAWACAAFQAXAAAA/v/z//X/8v/2//7/CQALABEACgAKAAIA/v/5/wAABQATABIAGQAVABIADQAGAP//AgD+/woACwAbABYAHAASAAsAAgDp/97/vv+//7r/v//J/9D/4//x/wEACQARABAAFAAFAAQA9v/8//7/BQAJAAwAFAAWABQAEAAGAP3/8f/q/+D/5f/l//H/8////wQACwAYABkAIAAYAA8ACgD///r/7v/v/+j/7f/u/+///f8CAA4AEgATAAsAAwDy/9z/1//L/9H/0v/f//T/CwAiAC8ALwAvACYAIQAXABEACQALAAoACAAHAAsADgAOAAoAAgD4//H/5P/k/9//4v/j/+n/8P/6//n/+//6//T/8f/w/+///P8CAAsAEwAXABcAEQAHAAAA+P/z/+r/7f/v//j//f/9/wIA//8CAPj//v/1/wMAAQALAAwAFAAUABMACwAAAPj/7//z//L/AAAKABcAHQAaABYAEAAGAP7/7v/s/+3/8f/3//v//v/+/wAA+v/3//P/8v/1//L/9//4//v/AgD//wAA+f/5//P/9v/2//P///8BAAsAFwAdACkALQAtACkAJQAZABQAAgD7//D/9f/0//7//f8JAAcADQAJAAQABAD7//f/8f/t/+b/5//g/+D/4v/o/+r/9f/5/wUADAALAA0ACgAJABAACwAUABgAHwAgACMAHAAbABcACgAEAPb/9v/y//P/8P/y//H/9f/z//T/9//4//r/+P/2//v/+//8//3/+P/7//v/+P/6//b//v///wQABAAEAAkACQAJAAYABgAGAA0ADQAPABEACwALAAAA+v/z/+3/7f/t/+7/9P/6//z/BgAHAA0AEwARABMACwAGAPv/9v/t/+z/6P/t/+//+f/9/woAEgAYACEAGwAjABgAGgAKAP//8P/n/+H/4f/j//H/+P8HAA0AEwAUABAABgD8/+7/5v/g/9v/4f/o//j/CQAVACUAKwAyACwAHgAPAPj/7f/Z/9j/0//g/+r/+/8LABoAJwAuAC0AIwAcAAsA/f/u/97/4P/b/+L/4v/w//b/AwAEAAIAAAD8//v/8//0/+7/+v///wgAEgAYACAAJQAfAB0ADQAMAPn/9//p/+7/5//r/+b/6f/t//X//f8AAAkADwAUABUAEAAIAAIA8f/v/+D/7v/o//v///8PABYAHwAfAB4AFgANAP//8v/o/93/3v/c/+f/7/8BAAoAFwAaAB0AGAAOAAQA9P/x/+j/7f/y//n/AwAJAA8ADwALAAQA+f/z/+f/6P/k/+r/7//3//7/CAARABgAIAAeACEAFwAXAAUAAwDx/+3/5v/o/+v/9P/9/woADwAVABYAEAALAP3/9f/n/+n/4f/p/+n/9P/+/wkAEwAdACAAIgAfABsAGAALAAYA+f/0//H/6v/x//H/+f8DAAgADwAQABMAEAANAAIA+//t//D/5v/s/+3/9/8AABEADgAZABIADAAGAPT/8//p/+v/6//3//7/DQAUABQAGQAVAA8ACQD9//j/8//0//f///8FABEAFAAeAB8AIQAfABQADAAAAPj/7//p/97/4P/b/+f/6f/z////CwAUABwAHAAcABYACAD+/+r/5P/f/+L/6P/x/wIAEAAgACoALAAtACQAGwAOAAIA7//r/9z/4f/V/+X/5P/3//n/AwAIABIAEgAOAAcA///7//f/8P/v//D/9P/5////AgALAAoADgAGAAMA///4//r/8//5//X/AwABAA8ACQARAAoACQAEAPz//P/3//f/9v/6//7/AgAHAAUABgAIAAMACAD/////+v/6//z/+f/9//f/AAD9/wUAAwAIAAoADAAJAA0ACQAKAAYA///+//3/+//7//j/+v/6////+f8AAPz/AgD//wEA+f////j/+//3//n/9//9//v//f/9//////8CAAEABwAHAA4ADgANAAsACQAFAP7//P/2//r/+f/6//7//f8FAAQACAAEAAUAAAAFAP//AAD7//z/+f/6//f/9f/3//f/9//4//v//P8CAP3/CAAFABEADAAQAAkACAADAPr/+P/x/+//8P/u//X/+P/+/wUABwANAA4ADgAMAAoABAACAP//+f/4//j/9//6//r/AQADAAwACAAMAAcAAwAEAPr/+//0//v/+P8AAAAACQAJAAgABwD/////9v/0/+//8f/x//z//f8GAAcADgAKAAoABAACAPz//v/2//z/+P////7/AwAHAAkADgALAAwACQAGAAMA+f/z/+//6v/t/+z/7//6/wAACgAOABQAEwAUAAsABAD7//f/8v/w//L/9f/9/wIACQALABAADgAMAAkAAQD///r/+P/7//n////+/wIABAABAAgA/v8FAP//AQABAP///v/8//r/+//9/wAAAgAFAAYACQAKAAgABwABAPz/9v/y//D/9f/1//v///8EAAgADAAJAAsABQADAP7/+v/2//j/9f/6//j/AAAAAAcABwAGAAkAAwAFAAAA//////v/AAD8/wIAAQAGAAcACgAKAAcACQADAAEA+f/z/+//7f/s/+//8f/5/wIABwAMAA0ADAAMAAUAAAD9//b/+P/2//n//f8AAAYABgAMAAsAEQAJAAkAAQD+//v/7//x/+f/7//r//T/8/8AAP//DAAJABMADgAVAA0ACwAEAP3//P/x//X/7v/1//j/AAAGAAoAEAARAA0ACgABAPr/+v/t//H/7P/u//X/+f///wUABwAOAAoAEQAIAAsABgD+//7/9v/4//n/+v/8/wIAAgAIAAcABwAHAAQAAgD///v/+v/3//r/+/8AAPz/BgABAAoACAAHAAMAAgD8//v/+P/1//f/9//6/wEAAgALAAkADgAMAAsABwAEAP7////4//3/9//7//7/+/8EAAIABgAEAAMAAQAAAAAA+v/6//j/+f/6//3/AAAFAAkADwALAA8ABwAJAAEA/f/7//b/+v/6//v/AQAAAAUABAAEAAUAAQD/////+/////z/AAD+/wMA//8DAAAAAAD///v//f/7//3////+/wEAAAAGAAQACAAGAAUABgAEAAAAAAD3//r/9f/2//j/+P8AAAQACgAMAAsADwAKAAwABAD+//n/+f/x//z/7/8AAPf/BgD9/wcAAwAHAAUA/f////X/9//y//D/8//3//r/AwAFAAgADgAOAA0ADAD//wEA9v/3//L/8P/y//b/+/8DAAQADwANABMADgALAAkA///+//X/9P/x//P/9v/7/wEABwAMABAAEAAPAA0ABgAAAPf/8P/w/+v/7v/x//f/AAAGAA4AEAASABMADQALAAEAAQD3//j/9f/2/wAA+/8HAAIADQALAA4ACgAHAAQA/v/8//b/8//z//L/9P/6//v/BgAGAAwADwAKAA4AAwAEAPv/+P/1//P/+P/5/wEAAgALAAwADwAPAAkABgABAPr/+v/0//b/9//4/wAA/v8KAAcACAAIAAQAAQABAPf//P/0//v/9v8BAPv/BgD9/wcABAAEAAUA//8CAAAAAAD//////f8CAPz/AwAAAAQABgAHAAQACwAEAAoAAwAEAAAAAQD+//3//f/5/wAA9//+//n/+/////v////8/wEA/v8CAP7/AAD9/wAA/v//////AAD9/wQA/v8GAP//BwD//wwA/v8MAP7/BgAAAP7/AAD6//n//P/0//v/+v/6//7//f8BAAEABAADAAEABQD//wIAAAD9/wEA+/8CAP7/BAABAAUAAgAGAAEAAgD+/wIA/f8CAPv/AAAAAAAAAgAAAP7////8//z//f/+//r/AAD8/wIAAwADAAUABQAEAAYA/v8FAPn/AAD5/////P8BAP//BQAFAAcACAAGAAQAAwD7/wEA9f/8//T/+P/3//v//f8FAP//CQAEAAsABgAGAAEAAAD9//j/+//4//z///8BAAQABgAIAAgABwADAAAA/f/7//j/+f/5//z//v8CAAQABgAGAAUABQAAAAIA+//7//n/+P/9//3/AAADAAUABwAHAAUABQABAAAA/P/5//f/+v/0////9f8FAP3/CQACAAoAAwAJAP7/AQD5//z/+P/+//f/AQD+/wQABwAEAAcABAAGAAEA///9//7/+f8BAPf/AwD8/wIAAQABAAEAAgD9/wAA+v8AAPv/AwD+/wcAAQAJAAMABQAFAP3/AgD2//3/9v/9//r///8AAAYAAwAKAAIACAACAAIA/f/8//3/+f/+//f////+/wAABAACAAUABAAFAAEAAwD9//3/+v/6//v/+v/+//7/AQADAAUAAQAHAPz/BAD5//7/+f/5//3/+f8CAP7/BgAEAAYABgAEAAMABAD+/wMA+/8AAP3/AgD+/wcAAQAIAAUABwAGAAIAAgD7//7/9P/4//P/+f/5//z/AgACAAgABgAHAAUAAgD///r/+f/1//f/9//6//3/AgADAAwABQARAAMADQADAAQA///6//3/+f/9//z/AAACAAUABQAHAAYABAACAP3//P/4//f/9v/2//n//P/7/wIAAQAGAAQABQACAAEA/v/9//z//f/8/wAAAAAFAAYABwAHAAcABQADAAMA/v8AAP///P8AAPv////8//3//f/+//7//P////7/AAAAAAAA/v8BAP3/AAD///7/AAAAAP//AgD9/wQA/f8EAP3/AwD//wMA//8BAP//AgD//wIA//8CAAEAAgADAAAAAwD+/wQA+/8CAPr////9//z////7/wEA/f8BAP//AQAAAAUA//8GAP7/BAAAAAIAAQAAAAIAAQACAAIABAACAAYAAQAFAAIAAgABAP7//v/9//n//P/4//z/+P/+//r//v////7/AwACAAEABAD//wQA//8AAAAAAAACAAEABgACAAsABAAIAAUAAQACAPv/+v/6//b//P/3/////f8FAAIABwAEAAQAAgD+//3/+f/5//j/9//9//n/AwD//wYAAwAIAAIABwAAAAEA///6////+f8CAPz/BgABAAcABwAFAAYABAD//wEA+f/9//f/+//7//v/AQD+/wIABAAAAAQA/v////7//P/7//v//P/+/wAAAwADAAcABAAIAAMABgACAP//AQD8/wAA+v8BAPz/AwD+/wIAAAADAAIAAQD//wEA+v8CAPj////8//v/AQD//wMABAAGAAQACQACAAUA/v////3/+f/9//v//v8AAAAABQACAAkA//8GAP7/AgD8//3/+v/7//r/+//+//7/BAAAAAYAAgAEAAQAAgABAP7//f/8//3//f8AAAEAAwAFAAcABQAJAAIABAABAPz//v/6//r/AAD4/wMA/f8GAAMABwADAAYAAgABAP///f/6//v/+P/7//7///8DAAMABgAIAAcACAABAAMA/f/9//v/+P/8//r///8AAAMABgAGAAgABQAEAAEAAgD7//7/+f/5//3/+f8BAP3/BQD//wkAAAAJAP7/BgD+//7//v/6//z//v/5/wEA+/8DAAIABAAEAAUABAAEAAEAAAD8//3/+f/6//r/+//+////BAACAAoAAwAHAAEAAgABAPz//f/7//z/+//+//7/AQADAAAABQABAAYAAAADAP3////8//z//P/9/wAA//8EAAQABAAFAAMAAgADAPn/AQD4/////f/8/wMA//8EAAMAAgACAAIA/v8AAP3//f/8//3//f8BAAEAAwADAAYAAwAHAAEABAD8/wEA+f/7//n//P/7/wEA/v8HAAIACQACAAgAAQACAP///P/8//r//v/8/wEAAAACAAcAAgAGAAIAAgACAP3//P/4//z/9/////r/AAD//wUAAgAJAAIACAD//wIA/v8AAPv////7///////+/wMAAAAGAAIABAADAP//AwD8/////f/8/wAA+/8EAP3/BQABAAQAAgABAAIAAAD///7//f/8/wAA/f/+/wIA/v8FAP//AgD//wIA//8AAPz//f/+//7//v8BAP//BQACAAYAAwAGAAIAAgD9//7/+v/+//j////7/wIAAAACAAIAAgADAAEAAAD///z//f/7//3//f/+/wEA/v8DAAIABgAFAAMAAwADAP//AgD6//7//P/8//7//P/+/wIAAAADAAMAAgAHAP//BQD9/wEA+v////j//v/8////AQAEAAIABwADAAQAAwD+/wAA/P/9//z/+v/8//3/AAD+/wQAAAAHAAEABwACAAIAAgD9//7/AAD3/wAA+v///wAAAAAEAAQABgADAAMAAgD///7//P/8//3//f8BAP3/BAD//wcAAgADAAEA//8CAPr////7//7/AgD9/wMA/f8GAP//BgD9/wIA/v8BAAAA//8BAP7/AwD9/wMA//8BAAEAAAAAAAIA//8EAP3/AQD///3/AQD6/wAA/v8BAAEAAgAEAAEACAAAAAgA/v8BAP3/+//8//n/AAD+/wIABgABAAsABAAGAAMA/f/8//r/9//6//r///8CAAMABAAEAAQABQABAAIA/v/+//7//P8AAPz/AAD+//7/AwD9/wcA//8DAAEABAACAAQA/v8AAP7//v/+//3/AQD9/wYA/f8GAAAABwAEAAUAAgD9/wAA+f/7//r/9f/+//n//v8DAAEACgADAAcAAgAAAAAA/P////z//f8BAP//BgAAAAYAAwAEAAAAAgD9/wMA/P8DAPr/AQD5/wAA+f////z//v8FAAAABQD//wEA/v8BAP3/AQD+/wIAAQAAAAIA//8AAAEA+v////j/AAD8/wQAAQAGAAUABAADAAMAAwACAAAA/P////z/BAD8/wMA/v8DAPz/AgD7/wAAAAD9/////////wIAAQADAAAAAwABAAEABgD+/wUAAAAAAAEA/v8CAP//AQD8//z/+v/8//v//f/+/wAAAQABAAAAAQAAAP///f/5//3//P8DAAYABwAJAAcACAAGAAQAAAD9//v/+v/7//v///8CAAUABwADAAQABQAFAAUA//////z/AAD7/wAA+v8AAP///f/+/////P8DAP7//P8BAPr/AwD7/wAA/P/9/wIA//8IAAQABgAGAAEAAwABAAAAAwD//wEA/v/9//7/AQABAAIA//8AAP7//f/9//j/+//7//v/AwACAAYACQAGAAkABwAFAAYA//8CAPv/+P/6//r/AAD+/wIA//8BAAEA//8AAAAAAwD8/wEA+f8BAP7/AQAAAAEAAQAAAAMABAALAAYABAADAP//BQABAP3/+//3//f/9//4//v/AQAFAAIABAAAAAgABQAFAP3//f/2//j/8v/z//n//v8BAAkABwAVAAoADwD9/wAA+//5//n/8//4//3//v8EAAIACQAIAAQABQD//wYABAD+/wEA/f8AAAEA/f///wIAAQABAAAAAQAHAAYAAQD///z//P/6//X/9v/4////+/8BAAAABgAFAAEAAQAAAAgABQD9////9f8AAPv//v/9/wUAAgALAPr/AwD3//v/+f/1//z/+/8GAAUACAAGAAcACgAKAAwABgAHAP//AQD7/wIAAgAKAAwABwADAP3/9P/z/+//8v/3//n//P/7//3/AwADAAkACAADAAQA9//9//b///8BAAQABwADAAQA/P/6//P/9P/y//j/+f/+//z//v/7/wcAEAAbACAAEQAEAO3/6f/p/wEAEwApADAAMwAuABwABwDj/83/uP+1/8D/1P/4/xAAJgAsAC0ALAAcAAYA4v/M/8D/zf/k/wUAKAA7AEIALwAeAAoA/f/v/+n/5v/v//X/8v/0//D/+/8CAAcACAAIAPr/8//m/+z/9v8GAA4AFQAeACUAJgAcAA0A9v/l/9T/0P/e//L/DQAeACkAKgAiAAwA8//Z/8n/yP/W//D/DQAoAC4AMQAjABsACAD8/+r/5//g/+X/4v/p/+//+f8BABEAFwAiABUACAD2//D/6//u/+f/9P/6/w8AFwAvADYARwAwABoA8//c/8r/xP/J/9n/8/8GABAAFQARABEACwAAAP7/8//2/+z/7f/w//v/DgAXACYAIwAmABoAEAAHAPj/8//i/9n/0//Q/9n/5v/6/xEAHwAkABwAEQACAPf/7//0//r/EgAYACcAHAAUAAIA9f/t/+v/8v/0//f/9P/s//D/8f/+//v//f/x//H/9P/7/wQAEAAaACQAJgAfABMABgACAP3/+v/3/+r/6v/m/+z/8f8AAA0AIQAhAB0ABQD9//D/8P/n/+r/8v8MAB8AJQAdAA8ABAABAPz/+P/v/+n/3f/f/93/8P8EABYAFQADAOv/3v/l//T/BgAHAAoADAAVABsAHwAaACMAFgAIAOb/1P/a//H/AwADAP//CwAZACsAHwAMAPr/5f/b/9H/1//s/wIACgAKAAYAEwAjACQACgDh/8L/v//g/wIALAA2ADgAKgAQAAMA8P/1//T/7f/i/9//8f8PACIAIwAWAA0ACAD8/+3/1//Y/+D/8v8CAA0AIQApAC0AIAASAAEA8//o/93/3//j//H///8VACkANgA2ACIAAgDj/77/tf+0/8r/7v8FACIANABBAEsAMgAXAOf/zv+6/8H/zP/p/wIAIAAsADkALgAmAAgA7f/N/8H/yP/k/wkAKgA0ADoALAAnABwADwD///D/5f/Y/8//zP/i/wEAJQAvACQAEQD//+z/5f/U/9v/4P/v//b/BQAaADcASAA/ACgABgDx/9f/0f/K/+H/8f8OABIAHgAcACEAEwADAOb/0f++/7//zf/w/xgANgBEAD4ANgAgABAA9f/o/+P/4v/t//H/BgAVAB8AGQAIAPn/8P/n/9//1f/W/+H/8/8DAAoAEQATABUAFQAQAAsACAADAP//+//9/wkAEQAaABYADAALAP//9f/o/9T/2v/f//f/CgAYAB8AGwAOAP3/8P/r/+7/9P/z//f/+v8FABYAHQApACAAHAAFAPb/4f/Y/9n/4P/0/wQACwARAA0AEAAOAAkA/v/1/+3/6f/m/+v/9f8JABYAHgAYABUACwD+/+z/4f/i//H/BQAMABQAEgAQAAUAAAD5/wcABwALAP//+v8AAP//CAAEAAUAAwD6//L/7f/r//f/8v/8//T/AAD6//7/9//9/wEADAALAA4ABAAIAAEACwARABkAIQAaABAA///r/+v/4v/u/+z/8f/6/wIADAAIAP//+//3/wQAAAAFAAMACQAQABAAEAARABcAFAAHAPf/8//0//r/8//n/+L/1//a/9b/2v/m//T/BAAPABEAGQAVACMAHgAoACIAIwAdABYABwD6//P/8//z//L/7P/z//r//P/3/+f/4v/k/+X/7f/u////DwAdACcALAAyADcAJQAVAPv/+P/4//7//v/7//T/5//X/8f/yf/O/+P/7P/7////CgAMABEADwAXABgAIgAjACMAIQAYABMACgAKAAMABgD8//r/8P/y/+//7//o/93/1f/T/9v/8f8JACYALAA0AB8AHQAKAAwA+/8BAPn/BQAKAA8AEAADAPT/4v/W/9b/1//h/+X/6//v//j/AQAPABAAEwAOAA8ADgANAAoACgALABAADAATAA8AEgAJAP3/8v/0//H/8f/n/97/5P/v//z/BQAOABUAGwAVABMAEwAdACIAGQAXAA8AEwAOAAEA9//u/+z/5P/f/9v/4v/p/+z/7//u//L/7//s/+z/8P/1//r///8GAA8AFwASABMAEwAVABwAFgAXABYAFAAHAPz/8f/5//7////4//P/8v/6//n////9/wYACQALAAsACAAJAAEA/f/1//b/+/8BAAQAAgD8//r//P/8//r/7//s/+X/5v/p/+//AQAMABcAEgAPAAQABQABAAcACgASABEACgAHAP3/AwD9////+//7//v/+P/8/wEABgAPAAkACwAMAAwADwAHAAoACAARAA0ACgAFAP3/+v/v/+7/7f/0//f/8//q/9f/zf+9/8L/zP/g//3/DgAYABcADAAKABEAFwAfABcAEQABAPz/8f/7/wAAFQAXAB4AGQAUABAACwAMAA0ADAAJAAsAFQArADEAPQAvAC8AGgAOAPj/+P/6/wAA7//k/9D/2//a/93/0v/M/8L/tv+m/6P/tf/T/+7/7f/u/+j/7f/2//7/EgAlADMALAAXAP7/7v/q//H///8NAB0AJwApACYAIwAkADgAPgBEAD4ANAAzACQAHgAUAB8ALQA3ADsAPwBBAD4A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6f/q/+//7P/t/+v/7P/0//f/AQAFAAgAAAD///v/AwAIAAMAAwD//woADwAQABIADgAQABEADwAZAB0AJQAZABMAAQAFAAAAAAD9//z/AwAJAAsACQAJAP//+v/q/+f/4P/k/9//3P/i/+T/9f/z//r/+v8AAAUADgAOABcADAAFAPv/9f/+/wEADwASABcAGQAVABYAFgAXABIACAD///v/+//1/+//6f/v//L/9//0//f//f/+//z/8//z//f/+v/4/+3/7f/t//L/9f/2/wIACQASABEADQAJAAcA//8CAPX////6/woADQAYABYAHQAWAB4AEgATAAUAAQD7//f/+f8AAAsAEwAVAA4ABwADAAMA/f/5/+//7f/q/+7//f8GABoAEQAOAPr/9f/y//D/8//v//L/7//0/+7/8P/q/+P/4f/a/+T/6v/5//z////5//r/+///////9v/z/+//8//8/wQAEwAhADEAMgA3AC4ALAAjABYABwAFAAcADwAVABQAGAAcAB4AGwAOAAUA+P/y/+n/4//n/+7/+v8AAAUACgAJAAoA+f/0/+T/5P/c/97/1f/h/9//7//x//X/8v/y/+n/7f/n/+//7f/y/+z/8P/x//7/BAANAAkACgALAA0AGAAVAB4AGAAfABkAHgAfAB4AIAAVABgAFQAkACEALQAiACQAIQAcABwAEwAJAAEA8P/r/+L/6v/l/+b/3f/a/9v/2f/c/9X/1//S/9L/z//S/9P/3f/d/+j/7f/5/wIAAAAGAAIACAAOAA0AFwAUAB4AGgAaAB0AGQAgABkAFAASABIAEQAOAAkACAAMABEADQAOAAsADgAOAA8AEQAWABoAHAAQABEAAwAJAAIABgADAAwADAAKAAQA+//1/+7/5P/b/9n/1P/Q/87/yv/S/9f/1v/V/9X/1v/f/9v/4f/h/+3/8//6//r/BAAIABAADwARABYAJAAjAC0AJAAuAC8ANQAvACwAJwAjACIAGgAdAB8AIgAfABYADwAFAP//9f/s/+z/5f/q/+f/7v/0//P/9v/z//b/9//3//L/9P/z//b/8v/u/+7/7f/y/+z/8P/s//P/8P/t/+z/7P/w/+7/7v/s//H/9v/5//z///8CAAYACwANABQAGQAZABoAEgAUABMAGQAbABkAGQAZABcAHAAZAB0AGgAbABcAEwAUABAADgAPAAEAAAD3/+7/7v/i/+D/4f/e/+H/3//e/93/3P/f/9r/5v/m/+7/9P/x//3/+f8BAPv//v/8/wYABgAKAAoACwAPABAAEgAPABEADwALAA0ABwAQABAAFgAVABQAGQAYAB4AGgAXABEADQAIAAMAAAD3//X/8//y//P/9P/w//D/7f/p/+j/5//l/+r/5f/o/+f/6v/1//j/AQACAAcADQANAA8ABgAFAAEA///+//j/+v/8/wIABwAHAAcABAAIAAQACAAFAAkADAAMAAoACQAMAA4AFAAQABEAEgAUABYAEgAMAAQABAD6//7/8v/4/+z/9f/n//D/6f/u/+3/6//u/+z/8v/1//v/+f/7//f/9//6//r//P/+////BAAHAAgACwANAAoADAAAAAMA/v8EAAAA/v////7/BwAEAA0ACwAUAA4ADwAGAA4ACAAXAAkADgAIAAcABwADAAAAAwADAAEA/f/1//T/8f/x/+r/6f/m/+b/6v/q/+7/8//3//n/+v/1//r//P///wUA//8KAAMADwAKAAwACwAHAA4ACwAPAAwAEwANABMABgAJAAMACAAIAAIACAD+/wgAAAADAP7/AgAAAAIA/P/4//r/+P/9//T/9//x//n/9f/2//j/9//8//v/9v/4//v/+P/9//b//P/9/wIAAQD+/////P/8//3//P8EAAUACQAJAAgADQANAA4ADAAJAAgACAAGAAwACAAMAAgABQAGAAAAAwD+/wEA+//8//f/9//7//v//v/5//v/+//9//z//P/8/wEA/v/+//z///8DAAUA/v/9//j/+f/2//X/8//6//r//P/9//z/AwAAAAEA+//+//n/AQD6/wcABAANABAACgAOAA4ADQARAAsADAALAAgACQAEAAkABwAHAAEA/v/4//r/9v/6//b/+//6//7/AAD8//z/9f/x//P/6//3//T/+//8//v//P/6////+/8CAPb//v/1////AAADAAQABwACAAoAAwALAAoAEAANAAwABQAKAAYACwABAAUA//8IAAYACQAEAAYAAQAFAPz/AwD7/wUA+v8AAPn/+v////r/+v/7//L////3//7/+//8//3//P8CAP3/AgD8//r/+P/2//r/9//+//r///8AAAAABwACAAQAAgD8/wAA/P/9//z///8AAAIABAAKAAYAEAADAAsABAAHAAgAAQAIAAEACAAFAAIABgAAAAgAAwALAAUACgADAAMA/f/7//j/+P/5//j/+f/5//n//f/7////+P/6//v/9//8//X/+P/3//n/+v/9//v/AgD+/wQAAQAAAAYA/v8EAP7/AAAAAAEAAQADAAMABQAEAAcAAwAIAAMABwAIAAIABwABAAIABgD//wUABQAHAAcABwADAAgAAAAFAP3/AQD7//7/+f/8//T//f/2//z//P/5/wEA+v////X/+P/1//n/+v/8//v///8AAAAAAwD//wUAAAAGAAIAAgAFAAEAAwD9////+/8GAAAABwADAAQABgACAAIAAAAAAAIAAAD+/wIA/v8HAAYABgAKAAYACwAEAAYA//8IAP//BgD5////+v8AAPz/+v/2//n/9f/5//T/9v/7//n/+v/2//n//P////z/+v/9//7/BgABAAgAAQAHAAAAAgAAAAAABAACAAMABAD//wYAAwAEAAUA/v8CAAIAAQACAP//AAACAAMAAgAHAAUADAAHAAgAAwAFAAUAAgAEAP3/AQD+//7////7/wEA+//+//v/+v/8//v/+v/5//r/+f/5//f/9v/5//v/+v/9//3//v8BAPz//f/9//3//P/+//z///8EAAQACAAHAAQABwAFAAkABwAGAAkABwAKAAcABQADAAQAAAACAP//AgAHAAQACAD9/wIA/f////v/+f/6//n/AQD5/wIA+f8FAPr/AwD6/wAAAQD+/////P/7/////P/6//z/+P/8//7//f/////////+//3//P/8/////f/+//3///8DAAEABgADAAgABwAJAAYACAAGAAYABgAFAAQABgAFAAMABgACAAgAAwADAAMA/f8CAPz////9/wIA/v8BAPz/+//6//v/9v/6//T/+P/2//j/9//9//v//f/+//r/AQD+/wMAAgADAAAAAQAAAAIAAwAFAAYABwAGAAYABQAFAAMAAgD//wAAAAACAAMAAgADAAMAAAABAAAAAAADAAAAAQADAAQAAwADAP////////z////8/wIA+v8AAPr//v////3/AAD7//3/9//5//r/+v/9//z/+v8AAP3/BQD//wQAAgABAAQA/f8EAAEABwAAAAMAAQACAAcAAQAGAAUAAwAGAAAABAAAAAcA//8FAP7/AAD//wIA/f8DAP3/AQD///7////+//7//v/+//3//P/9//v/AAD9/////P8AAP//AQABAP//AgABAP//AgD+/wIAAAD+//z/AAD9/wQAAAD//wMA/v8FAP//AgADAP//BQD8/wAAAQD9/wUA/f8DAP//AgAAAP//AQD8/wIA/f/9/wAA//8BAAMAAAABAAIA/v8DAAEAAwACAAEAAQABAAIA//8DAP7/AQD+////AAD+/wMA/P8CAP3/AAD9/wAA+//+//v////+/wMAAQACAAMAAAAEAAIAAwACAAAAAgD8/wIA/v///wIA+/8BAPz/AAD+/wAA/v/9/wEA+/8CAP3/AAABAAAAAQADAAIABAAFAAMABgACAAQAAAAGAP7/BgD9/wAA///9/wEA///+/wAA/f/+//7//f8BAP///v////r/AwD6/wMA/P8DAAAAAQABAAIAAwAAAAAA/P8AAP3/BAD9/wMA/f8DAAAAAgABAAEAAwD//wAA/f8BAP//AgAAAP3/AAD//wIAAQABAP//AAAAAPz/AAD9/wIA/v8CAP3/BAD//wQAAAAAAAAA//8CAAIAAAAFAP7/BAABAAIAAgADAP3/BAD9/wAAAAD8/wIA//8BAAEAAAAAAAMA/f8CAAEA//8HAPv/AwD+/wAAAgD+/////P8AAPv/AgD7/wMA/v///////P8BAP3////9//3//P8BAPz/AwD9/wIAAAACAAEAAAAFAP3/BAD+/wEAAAAEAAEABAABAP//BAAAAAQAAgACAAMAAgAEAAEABAABAAMAAQD//wEA/v8DAAAA//8DAPz/BAD+//7////7//7//P/8//v//f/7//3//f/7/wAA+/8AAPr/AgD8/wMA/v8BAAAAAwAAAAUAAgADAAYA//8HAP//BgAAAAIA//8DAAAABQACAAMAAgACAAEAAgAAAAAAAQD+/wEA//8AAAEA////////AAD+/wEA/P8AAP3/AAD9/wEA/P8BAPr/AgD5/wMA+//+//z//f///wEA//8BAAAAAgAAAAEA/v8DAP//BAD+/wUA/v8JAP7/BwD+/wEAAwD//wEAAgD+/wYAAAAFAAAABQD+/wQA/////wEA/f8CAP//AQD/////AQD9/////f/+/wAA/v////3/AAD9/////f/8/wAA/f////////8CAAAAAgABAAEAAgD/////AQD//wAA//8AAAAAAgD+/wQA//8GAP//AwD//wIAAAD//wAA/v8EAPz/BAD8/wUA//8EAAAAAQABAAEAAQD//////v8AAP7/AAAAAAEAAgAAAAAAAAD+/wEA/f/+//7//f///wEA/P8EAPv/BgD8/wQA/////wQA+v8FAPv/AgD+/wAA/v8DAP3/BwD7/wcA/v8EAAEAAQADAP7/AQD/////AAAAAAAAAQABAAIAAAAEAAAAAgD+/////P////7//v/+//7//f8AAP7/AAAAAAEA/f8CAPv/AgD+//3/AgD6/wUA/P8CAAAAAgAEAAIAAgADAAAAAwAAAAAAAgD//wQA//8FAAAABQACAAIAAgACAAAAAgD//wEA/v8BAP3/AQD9///////+/wAA/v/+/wAA+f8CAPn/AQD8//3//f/+//////8DAP3/AwD+/wAAAAAAAP//AQD+/wIAAAAAAAIA/v8EAP3/BQD9/wYAAAADAAAAAQACAAAABAD//wUAAQAEAAEAAwADAAEAAwD//wAAAAAAAP//AQD//wEAAQD+/wEA/v///////f/9//3//P8AAPv/AQD8//3/AQD6/wMA/P8AAPz//v/9//7/////////AQD+/wMA/v8GAP//BQD//wQAAAAHAAEABQABAAMAAwACAAQAAAAGAAEAAwABAAEAAQACAP7///8AAP3/AQD9////AAD9///////9/wEA/f////z//v/+/////P8BAPr/AwD8//7/AQD+/wEA/v///wAAAAD///7/AAD//wEAAAAAAAIAAgADAAIAAgADAAMAAgADAP7/AwD//wMAAQACAAEAAgACAAAAAgD//wIA//8AAAAAAAAAAP7/AQD+/wAA/v/+/wIA/f8CAP3///8BAP3/AAD8/////v////3////+/wEAAAAAAP//AQD+/wEA//8AAP//AAAAAAEAAQADAAAABAAAAAMAAAACAP////8DAP3/AgAAAP//AwABAAEAAAABAP//AgAAAAAA//8BAP3/BAD9/wEAAAAAAAEAAQD//wIAAAAAAP/////8/wEA/P8BAPz/AQD9/wIA/v8AAAAAAAABAAAA/f8CAPz/BAD8/wMA/f8CAP//AAABAAAAAAADAP7/AwD9/wMA//8CAP//AAAAAAAAAQAAAAAAAAADAP7/BAD9/wIAAAAAAP//AAD+/wIAAAAAAAIA//8CAP//AAABAP//AAD+/wMA/f8CAP//AQAAAAIA+/8EAP3/AQABAP7/AAABAP3/AQD9/wAAAAD9/wEA/P8DAP7/AgD9/wEAAAD//wMA/P8DAAAAAAABAAAA//8BAAIA/v8DAP7/AAABAP//AAAAAP//AQAAAAAAAQABAAAAAQABAP7/AwD+/wAAAQD//wIAAAD//wIA//8BAAAA//8AAP//AAD//wAA/v///wAA/v8DAP3/BAD9/wMAAAABAAAAAAD//wIA//8AAAEA//8BAP//AAD//wMA/P8EAPz/AQAAAAAAAQD/////AQD//wEA/v8DAP7/BAD9/wEAAAABAAAAAAD/////////////AAAAAP////8AAP//AQAAAP//AAAAAAAA//8BAP7/BAD9/wQA/P8FAP7/AwABAP//AgD//wAAAQD+/wIAAAAAAAAAAAD//wQA/v8CAP//AAABAAEA/v8DAP3/AgD+//////8BAP7/AgD+/wAAAAD9/wIA/f8AAP7//v///wAA/v8BAP////8BAP//AAABAP//AQD//wAAAAABAAAAAwD9/wQA//8BAAMA/P8FAP3/BAD//wAAAgD+/wMA/v8DAPz/BQD9/wIAAAD//wAAAAD//wAA/////wAA/v8AAP//AAAAAAAAAAD+/wIA/f8CAP///v8BAP3/AgD+/wEA//8AAAAAAAAAAAEA//8AAAAA//8AAAAAAAD//wIA/f8DAP7/AgD//wEAAQD//wQA/P8EAP//AAADAP3/AgD//wAAAgD+/wMA/f8CAP//AQAAAAAA/////wEA/f8EAPv/AwD+////AAD/////AQD9/wIA/P8CAP7/AAD//wEA/f8DAP7/AQABAP7/AgD+/wIA/v8BAAIA/f8GAPv/BgD+/wIAAQAAAAIAAQAAAAEAAAAAAAMA/v8CAP//AAABAP//AAAAAAEA/v8BAP7/AQD+/wEA/v8AAP////8BAP3/AwD7/wQA+/8CAP7/AQD+/wEA/v///wIA/f8CAAEA/f8FAP3/AwD+/wIAAAABAAAAAQAAAAEAAwD+/wQA/v8CAAAAAQD//wIA/v8CAP7/AQAAAP//AgD9/wIA/v8BAAAAAQD//wIA/f8DAP3/AQAAAP7/AQD+////AQD//wEAAAD//wAA//8AAP//AAAAAP7/AQD+/wEA//8DAP7/AgD//wEAAAABAAAAAQD//wMA/f8EAP7/AwABAP//AwD+/wMA//8CAP//AwD9/wMA/P8DAP////8BAP3/AgD9/wIA/f8CAP7/AQD9/wEA/f8AAAIA+/8EAPv/BQD7/wUA/P8DAP//AAAAAAAAAQD+/wIA/f8DAP7/AQABAP//AwD9/wQA/P8DAP//AQACAP7/AgABAAAAAgD//wIA//8CAP//AAACAP7/AwD+/wAAAAAAAAAA/v8BAP7/AAD/////AAD//wAA/v8BAP7/AQD//wEA//8AAAEA/f8EAPz/BAD+/wIA//8CAAAAAQAAAAEA//8DAP3/AwD//wAAAgAAAP//AgD+/wEAAgD+/wIA/v8CAP//AQAAAP//AQD//wAAAAAAAAAA//8BAP//AAAAAAAA/v8BAP7/AAAAAP7/AQD///7/AgD8/wQA/f8AAAAA/v8CAP7/AgD+/wEAAAABAP//AwD+/wIA//8BAAAAAQAAAAAAAQAAAAAAAQAAAAEAAQAAAAEAAAABAP//AwD+/wMA/P8EAP3/AwD/////AgD9/wIA//8BAP7/AQD+/wIA/f8BAP7/AgD+/wAA///+/wMA+/8EAPz/AgD///7/AwD9/wIAAAD+/wMA/v8CAP//AgD//wEAAAAAAAIA//8CAAAAAAAAAAEA//8DAP7/AgD+/wMA/v8CAP7/AgD+/wIA/f8DAP3/BAD7/wQA/f8BAAEA/f8DAP3/AQAAAAAA/v8EAPr/BQD9/wAAAQD//wAAAgD+/wIA/v8CAP7/BAD9/wMA//8AAAEAAAABAP//AQD//wEA//8CAP7/AgD+/wEAAAAAAAAAAAD//wEA//8BAP7/AwD7/wUA/P8CAAEA/v8CAP//AAACAP7/AgABAP//AgD//wAAAgD//wAAAQD+/wIAAAD+/wIA/v8BAAAA//8BAP3/AwD9/wIA/v8CAP3/AwD9/wIA/////wIA/f8DAP////8EAPr/BwD6/wYA/P8EAP3/BAD9/wMA/v8CAAAA//8CAP7/AgD+/wEAAAD+/wEA//8AAAAA/v8BAP//AAAAAP//AQD//wEA//8CAP7/BAD8/wUA/f8DAAAAAAACAP//AwD+/wMA/f8EAPz/BAD8/wMA/v8BAP7/AQD+////AQD9/wEA///+/wEA/////wAA/v8BAP7/AQD//wAAAQAAAAAAAQAAAAAAAgD//wEA//8CAP7/BAD9/wMA/v8DAP3/BAD9/wEAAQD+/wIA/v8AAAEA/v8DAPz/BAD8/wMA/v8BAP//AQAAAP7/AwD8/wQA/v8AAAEA/v8CAP//AAACAP3/AwD9/wEAAQD+/wIA/v8AAAAA/v8CAP7/AAAAAP7/AQAAAP7/AQD+/wEAAAD//wEA/v8DAP7/AgD//wAAAQABAP//AgD+/wMA/v8EAP3/AwD//wEAAAABAAAAAAABAP3/AwD+/wAAAQD9/wMA/f8CAP3/AgD+/wEA//8BAP7/AgD9/wMA/f8BAP//AQD+/wIA/f8DAP3/AgD//wAAAQD//wAAAAD//wIA/f8EAPz/BAD9/wMA/f8EAP7/AQD//wAAAAABAP//AAAAAAEA/v8CAP//AAABAP7/AgD//wEAAAD//wIA/v8CAP//AAABAAEA/v8EAPv/BQD9/wIA/v8BAP//AQD/////AQD+/wMA/P8EAPr/BgD7/wIAAAD9/wQA/P8DAP3/AgAAAAAAAAAAAAAAAQAAAP//AgD+/wIA/v8CAP7/AgD+/wMA/v8BAP//AQAAAAAA//8BAAAAAAAAAP//AQAAAP//AgD+/wEAAAAAAAAAAAD//wEA//8BAP7/AgD9/wIA//8BAP////8CAP3/AwD+/wAAAQD//wAAAAAAAAAAAAAAAP//AQAAAAAAAAD//wIA/f8EAPv/BAD//wAAAQD+/wIA/v8DAPz/BAD8/wMA/v8BAAAA//8CAP7/AgD//wAA//8BAAAA//8CAPz/BQD7/wMA/////wEAAAD+/wIA//8AAAAAAQD/////AgD9/wQA/P8DAP7/AQAAAAAAAAAAAAAA//8DAP3/AwD9/wIAAAAAAAEA/v8DAP7/AgD//wAAAgD+/wIA/v8BAAAA//8BAAAA//8BAP////8BAAAA//8BAAAA/v8CAP7/AQAAAAAAAAAAAP//AgD9/wQA/P8EAP3/AgD//wAAAgD+/wIA/v8CAP3/AwD9/wMA/v8BAP7/AgAAAP//AgD+/wEAAQD+/wIA//8BAP//AgD+/wIA//8BAP//AgD9/wQA+/8GAPv/AwD+/wEAAQD/////AQD//wEAAAD//wEAAAD//wIA/f8EAPz/BAD8/wIAAAAAAAAAAQD+/wIA/v8CAP//AAABAP3/BAD8/wMA/////wIA/v8BAAAAAAD//wEA//8BAAAA//8BAAAAAAABAP7/AgD//wAAAQD+/wMA/P8EAP3/AQACAPz/BgD6/wUA/P8DAP7/AQABAP7/AgD+/wEAAAAAAAEA/v8CAP3/AwD+/wIA/f8CAP7/AgD+/wMA/P8EAP3/AgD//wEA//8BAAAA//8BAP//AAABAP//AQD//wAAAAABAP//AQD//wAAAQD+/wIA//8AAAEA//8AAAEA//8BAAAAAAAAAAAAAAAAAAEA//8AAAEA/v8CAP//AAABAP//AAABAP//AQAAAP//AgD+/wEAAAAAAAAAAAAAAP//AgD//wAAAQD//wEA//8AAAAAAQAAAP7/AwD8/wQA/f8CAP//AAABAP7/AgD/////AwD8/wQA/f8CAP//AAABAP//AAABAP//AQD//wEA//8BAP//AgD+/wIA/v8BAAAAAAAAAAAAAAD//wEAAAAAAAAA//8CAP//AAAAAP//AgD+/wIA/v8BAAAAAAAAAAAAAAAAAAAAAQD+/wIA/v8CAP//AAAAAAAAAAAAAP//AgD+/wIA/v8BAAAAAAD//wEA//8BAAAA//8BAP//AQABAP7/AwD8/wQA/f8CAP//AQD+/wIA/v8CAP//AAD//wMA/P8EAP3/AAACAP7/AQAAAP//AQAAAAAA//8BAP//AQAAAP//AQD//wAAAQD+/wMA/f8CAP//AAAAAAAAAAAAAP//AgD9/wQA+/8EAP7/AgD+/wIA/v8CAP7/AgD//wAAAQD+/wEAAAAAAAAAAAD//wAAAQD//wEA/v8CAP7/AQAAAP7/BAD7/wQA/f8AAAMA+/8GAPr/BAD+/wEAAAD+/wMA/f8EAP3/AQD//wEAAAAAAAEA/v8CAP//AAACAP3/AwD+/wEAAAAAAAAAAQD+/wIA//8BAP7/AgD+/wIA//8AAAAAAAD//wIA/f8DAP3/AgD+/wIA/f8DAP3/AQAAAAAAAAD//wEA//8BAP//AAAAAAAAAAAAAP//AQD//wEA//8BAP7/AwD8/wUA+v8GAPv/AwD+/wEAAAD//wEA/v8DAP3/AwD8/wQA/f8BAAEA/v8BAAAA//8BAAAA//8BAP//AAACAP7/AQAAAP//AgD+/wIA/v8CAP//AAABAP//AQD//wEA//8AAAEA//8AAAEA/v8CAP7/AQAAAAAA//8BAP//AAAAAAAAAAABAP3/BAD7/wUA/P8DAP3/AwD9/wIA//8AAAAAAAAAAP//AgD+/wIA/f8DAP3/AwD9/wIA//8AAAAA//8BAP//AgD9/wMA/v8AAAIA/f8DAP7/AQAAAP//AQAAAP//AgD+/wEAAQD+/wMA/f8DAPz/BQD8/wIAAAD+/wIA/v8BAAAA//8BAP3/BAD9/wEA//8BAP7/AgD+/wEAAQD9/wMA/f8EAPz/AwD+/wIA//8AAAAAAgD+/wMA/f8CAP//AgD//wAAAAAAAP//AwD9/wEAAAD+/wQA+/8EAP3/AQAAAAAA/v8DAPz/BAD9/wEA//8AAAAAAQD//wAAAQD9/wQA/f8CAP//AQD//wIA/f8EAPz/BAD8/wQA/f8DAP3/AgD//wAAAQD//wAAAQD+/wEA//8CAP3/AwD9/wIAAAD+/wMA/f8CAP//AAAAAAAAAAAAAAAAAAABAP3/BAD8/wMA//8AAAAAAAAAAAAAAAD//wEA//8BAAAA/f8EAPz/BAD9/wEAAAAAAAEA/v8CAP7/AQAAAP//AQAAAP//AQD//wIA/f8EAPz/AwD+/wIA/v8DAPv/BQD9/wEAAQD+/wEAAAAAAAAA//8BAP//AQD//wEA/v8CAP7/AQAAAAAA//8BAP//AAACAPz/BQD7/wQA/f8BAAEA//8BAP//AAAAAAEA//8AAAEA/v8CAP////8CAP7/AQAAAP//AAABAP7/AwD8/wQA+/8FAPz/AgAAAP7/AwD9/wIA//8AAAEA/v8CAP7/AwD8/wMA/v8CAP7/AQD//wIA/v8CAP7/AQAAAAAAAAAAAP//AgD+/wIA/v8BAAAA//8BAP//AQD//wAAAAABAP7/AgD+/wEAAAAAAAAAAAD//wEA//8CAP3/AwD9/wMA/v8CAP3/AwD+/wEAAAAAAP//AQAAAP7/BAD7/wQA/////wIA/f8DAP7/AgD+/wEA//8CAP7/AQD//wAAAgD+/wEA//8BAAAA//8BAP7/AgAAAP7/AwD8/wMA//8AAAEA/v8CAP//AAAAAP//AgD//wAA//8CAP7/AgD/////AwD9/wIA//8AAAEA//8BAP//AQAAAAAA//8BAAAAAAA=")
+format = 1
+
+[sub_resource type="AudioStream" id="AudioStream_pe27w"]
+
+[sub_resource type="PackedScene" id="PackedScene_pjmv7"]
+_bundled = {
+"conn_count": 0,
+"conns": PackedInt32Array(),
+"editable_instances": [],
+"names": PackedStringArray("VN_ChoiceLayer", "Control", "layout_mode", "anchors_preset", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "script", "Choices", "VBoxContainer", "layout_mode", "anchors_preset", "anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "offset_left", "offset_top", "offset_right", "offset_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "alignment", "metadata/_edit_layout_mode", "DialogicNode_ButtonSound", "AudioStreamPlayer", "unique_name_in_owner", "script", "sound_pressed", "sound_hover", "sound_focus"),
+"node_count": 3,
+"node_paths": [NodePath("."), NodePath("./Choices")],
+"nodes": PackedInt32Array(-1, -1, 1, 0, -1, 8, 2, 0, 3, 1, 4, 2, 5, 3, 6, 4, 7, 5, 8, 6, 9, 7, 0, 1073741824, 0, 11, 10, -1, 15, 12, 8, 13, 9, 14, 10, 15, 11, 16, 12, 17, 13, 18, 14, 19, 15, 20, 16, 21, 17, 22, 18, 23, 19, 24, 20, 25, 21, 26, 22, 0, 1073741825, 0, 28, 27, -1, 5, 29, 23, 30, 24, 31, 25, 32, 26, 33, 27, 0),
+"variants": [3, 15, 1.0, 1.0, 2, 2, 2, SubResource("GDScript_1y1i4"), 1, 8, 0.5, 0.5, 0.5, 0.5, -41.0, -47.0, 42.0, 47.0, 2, 2, 2, 1, 1, true, SubResource("GDScript_m7pkt"), SubResource("AudioStreamWAV_824le"), SubResource("AudioStreamWAV_eolcr"), SubResource("AudioStream_pe27w")],
+"version": 3
+}
+
+[sub_resource type="Resource" id="Resource_eolcr"]
+script = SubResource("GDScript_lxpkx")
+scene = SubResource("PackedScene_pjmv7")
+
+[sub_resource type="GDScript" id="GDScript_53lxk"]
+script/source = "@tool
+extends DialogicLayoutLayer
+
+## A layer that contains a text-input node.
+
+
+func _apply_export_overrides() -> void:
+	var layer_theme: Theme = get(&'theme')
+	if layer_theme == null:
+		layer_theme = Theme.new()
+
+	if get_global_setting(&'font', ''):
+		layer_theme.default_font = load(get_global_setting(&'font', '') as String)
+	layer_theme.default_font_size = get_global_setting(&'font_size', 0)
+"
+
+[sub_resource type="GDScript" id="GDScript_6tcgn"]
+script/source = "class_name DialogicNode_TextInput
+extends Control
+
+## Node that will show when a text input field is reached.
+## Should be connected to a (probably contained) label, a line edit and a button to work.
+
+## The LineEdit to use.
+@export_node_path var input_line_edit: NodePath
+## The Label to use.
+@export_node_path var text_label: NodePath
+## The Button to use.
+@export_node_path var confirmation_button: NodePath
+
+# This is set by the subsystem and used as a confirmation check.
+var _allow_empty := false
+
+
+func _ready() -> void:
+	add_to_group('dialogic_text_input')
+	if confirmation_button:
+		get_node(confirmation_button).pressed.connect(_on_confirmation_button_pressed)
+	if input_line_edit:
+		get_node(input_line_edit).text_changed.connect(_on_input_text_changed)
+		get_node(input_line_edit).text_submitted.connect(_on_confirmation_button_pressed)
+	visible = false
+
+
+func set_text(text:String) -> void:
+	if get_node(text_label) is Label:
+		get_node(text_label).text = text
+
+
+func set_placeholder(placeholder:String) -> void:
+	if get_node(input_line_edit) is LineEdit:
+		get_node(input_line_edit).placeholder_text = placeholder
+		get_node(input_line_edit).grab_focus()
+
+
+func set_default(default:String) -> void:
+	if get_node(input_line_edit) is LineEdit:
+		get_node(input_line_edit).text = default
+		_on_input_text_changed(default)
+
+
+func set_allow_empty(boolean:bool) -> void:
+	_allow_empty = boolean
+
+
+func _on_input_text_changed(text:String) -> void:
+	if confirmation_button.is_empty():
+		return
+	get_node(confirmation_button).disabled = !_allow_empty and text.is_empty()
+
+
+func _on_confirmation_button_pressed(text:=\"\") -> void:
+	if get_node(input_line_edit) is LineEdit:
+		if !get_node(input_line_edit).text.is_empty() or _allow_empty:
+			DialogicUtil.autoload().TextInput.input_confirmed.emit(get_node(input_line_edit).text)
+"
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3dpjm"]
+content_margin_left = 15.0
+content_margin_top = 15.0
+content_margin_right = 15.0
+content_margin_bottom = 15.0
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="Theme" id="Theme_8xwp1"]
+
+[sub_resource type="PackedScene" id="PackedScene_6alah"]
+_bundled = {
+"conn_count": 0,
+"conns": PackedInt32Array(),
+"editable_instances": [],
+"names": PackedStringArray("TextInputLayer", "Control", "layout_mode", "anchors_preset", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "script", "DialogicNode_TextInput", "Control", "layout_mode", "anchors_preset", "anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "offset_left", "offset_top", "offset_right", "offset_bottom", "grow_horizontal", "grow_vertical", "mouse_filter", "script", "input_line_edit", "text_label", "confirmation_button", "metadata/_edit_layout_mode", "TextInputPanel", "PanelContainer", "unique_name_in_owner", "self_modulate", "layout_mode", "anchors_preset", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "theme_override_styles/panel", "VBoxContainer", "VBoxContainer", "layout_mode", "TextLabel", "Label", "unique_name_in_owner", "layout_mode", "theme", "text", "autowrap_mode", "InputField", "LineEdit", "layout_mode", "ConfirmationButton", "Button", "layout_mode", "size_flags_horizontal", "text"),
+"node_count": 7,
+"node_paths": [NodePath("."), NodePath("./DialogicNode_TextInput"), NodePath("./DialogicNode_TextInput/TextInputPanel"), NodePath("./DialogicNode_TextInput/TextInputPanel/VBoxContainer"), NodePath("./DialogicNode_TextInput/TextInputPanel/VBoxContainer"), NodePath("./DialogicNode_TextInput/TextInputPanel/VBoxContainer")],
+"nodes": PackedInt32Array(-1, -1, 1, 0, -1, 8, 2, 0, 3, 1, 4, 2, 5, 3, 6, 4, 7, 5, 8, 6, 9, 7, 0, 1073741824, 0, 11, 10, -1, 18, 12, 8, 13, 9, 14, 10, 15, 11, 16, 12, 17, 13, 18, 14, 19, 15, 20, 16, 21, 17, 22, 18, 23, 19, 24, 20, 25, 21, 26, 22, 27, 23, 28, 24, 29, 25, 0, 1073741825, 0, 31, 30, -1, 9, 32, 26, 33, 27, 34, 28, 35, 29, 36, 30, 37, 31, 38, 32, 39, 33, 40, 34, 0, 1073741826, 0, 42, 41, -1, 1, 43, 35, 0, 1073741827, 0, 45, 44, -1, 5, 46, 36, 47, 37, 48, 38, 49, 39, 50, 40, 0, 1073741828, 0, 52, 51, -1, 1, 53, 41, 0, 1073741829, 0, 55, 54, -1, 3, 56, 42, 57, 43, 58, 44, 0),
+"variants": [3, 15, 1.0, 1.0, 2, 2, 2, SubResource("GDScript_53lxk"), 1, 8, 0.5, 0.5, 0.5, 0.5, -210.0, -50.0, 210.0, 50.0, 2, 2, 2, SubResource("GDScript_6tcgn"), NodePath("TextInputPanel/VBoxContainer/InputField"), NodePath("TextInputPanel/VBoxContainer/TextLabel"), NodePath("TextInputPanel/VBoxContainer/ConfirmationButton"), 1, true, Color(0, 0, 0, 0.780392), 1, 15, 1.0, 1.0, 2, 2, SubResource("StyleBoxFlat_3dpjm"), 2, true, 2, SubResource("Theme_8xwp1"), "Please enter some text:", 3, 2, 2, 8, "Confirm"],
+"version": 3
+}
+
+[sub_resource type="Resource" id="Resource_pjmv7"]
+script = SubResource("GDScript_lxpkx")
+scene = SubResource("PackedScene_6alah")
+
+[sub_resource type="GDScript" id="GDScript_ginkp"]
+script/source = "@tool
+extends DialogicLayoutLayer
+
+## Example scene for viewing the History
+## Implements most of the visual options from 1.x History mode
+
+@export_group('Look')
+@export_subgroup('Font')
+@export var font_use_global_size: bool = true
+@export var font_custom_size: int = 15
+@export var font_use_global_fonts: bool = true
+@export_file('*.ttf', '*.tres') var font_custom_normal: String = \"\"
+@export_file('*.ttf', '*.tres') var font_custom_bold: String = \"\"
+@export_file('*.ttf', '*.tres') var font_custom_italics: String = \"\"
+
+@export_subgroup('Buttons')
+@export var show_open_button: bool = true
+@export var show_close_button: bool = true
+
+@export_group('Settings')
+@export_subgroup('Events')
+@export var show_all_choices: bool = true
+@export var show_join_and_leave: bool = true
+
+@export_subgroup('Behaviour')
+@export var scroll_to_bottom: bool = true
+@export var show_name_colors: bool = true
+@export var name_delimeter: String = \": \"
+
+var scroll_to_bottom_flag: bool = false
+
+@export_group('Private')
+@export var HistoryItem: PackedScene = null
+
+var history_item_theme: Theme = null
+
+func get_show_history_button() -> Button:
+	return $ShowHistory
+
+
+func get_hide_history_button() -> Button:
+	return $HideHistory
+
+
+func get_history_box() -> ScrollContainer:
+	return %HistoryBox
+
+
+func get_history_log() -> VBoxContainer:
+	return %HistoryLog
+
+
+func _ready() -> void:
+	if Engine.is_editor_hint():
+		return
+	DialogicUtil.autoload().History.open_requested.connect(_on_show_history_pressed)
+	DialogicUtil.autoload().History.close_requested.connect(_on_hide_history_pressed)
+
+
+func _apply_export_overrides() -> void:
+	var history_subsystem: Node = DialogicUtil.autoload().get(&'History')
+	if history_subsystem != null:
+		get_show_history_button().visible = show_open_button and history_subsystem.get(&'simple_history_enabled')
+	else:
+		set(&'visible', false)
+
+	history_item_theme = Theme.new()
+
+	if font_use_global_size:
+		history_item_theme.default_font_size = get_global_setting(&'font_size', font_custom_size)
+	else:
+		history_item_theme.default_font_size = font_custom_size
+
+	if font_use_global_fonts and ResourceLoader.exists(get_global_setting(&'font', '') as String):
+		history_item_theme.default_font = load(get_global_setting(&'font', '') as String) as Font
+	elif ResourceLoader.exists(font_custom_normal):
+		history_item_theme.default_font = load(font_custom_normal)
+
+	if ResourceLoader.exists(font_custom_bold):
+		history_item_theme.set_font(&'RichtTextLabel', &'bold_font', load(font_custom_bold) as Font)
+	if ResourceLoader.exists(font_custom_italics):
+		history_item_theme.set_font(&'RichtTextLabel', &'italics_font', load(font_custom_italics) as Font)
+
+
+
+func _process(_delta : float) -> void:
+	if Engine.is_editor_hint():
+		return
+	if scroll_to_bottom_flag and get_history_box().visible and get_history_log().get_child_count():
+		await get_tree().process_frame
+		get_history_box().ensure_control_visible(get_history_log().get_children()[-1] as Control)
+		scroll_to_bottom_flag = false
+
+
+func _on_show_history_pressed() -> void:
+	DialogicUtil.autoload().paused = true
+	show_history()
+
+
+func show_history() -> void:
+	for child: Node in get_history_log().get_children():
+		child.queue_free()
+
+	var history_subsystem: Node = DialogicUtil.autoload().get(&'History')
+	for info: Dictionary in history_subsystem.call(&'get_simple_history'):
+		var history_item : Node = HistoryItem.instantiate()
+		history_item.set(&'theme', history_item_theme)
+		match info.event_type:
+			\"Text\":
+				if info.has('character') and info['character']:
+					if show_name_colors:
+						history_item.call(&'load_info', info['text'], info['character']+name_delimeter, info['character_color'])
+					else:
+						history_item.call(&'load_info', info['text'], info['character']+name_delimeter)
+				else:
+					history_item.call(&'load_info', info['text'])
+			\"Character\":
+				if !show_join_and_leave:
+					history_item.queue_free()
+					continue
+				history_item.call(&'load_info', '[i]'+info['text'])
+			\"Choice\":
+				var choices_text: String = \"\"
+				if show_all_choices:
+					for i : String in info['all_choices']:
+						if i.ends_with('#disabled'):
+							choices_text += \"-  [i](\"+i.trim_suffix('#disabled')+\")[/i]\\n\"
+						elif i == info['text']:
+							choices_text += \"-> [b]\"+i+\"[/b]\\n\"
+						else:
+							choices_text += \"-> \"+i+\"\\n\"
+				else:
+					choices_text += \"- [b]\"+info['text']+\"[/b]\\n\"
+				history_item.call(&'load_info', choices_text)
+
+		get_history_log().add_child(history_item)
+
+	if scroll_to_bottom:
+		scroll_to_bottom_flag = true
+
+	get_show_history_button().hide()
+	get_hide_history_button().visible = show_close_button
+	get_history_box().show()
+
+
+func _on_hide_history_pressed() -> void:
+	DialogicUtil.autoload().paused = false
+	get_history_box().hide()
+	get_hide_history_button().hide()
+	var history_subsystem: Node = DialogicUtil.autoload().get(&'History')
+	get_show_history_button().visible = show_open_button and history_subsystem.get(&'simple_history_enabled')
+"
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_upgjp"]
+content_margin_left = 5.0
+content_margin_top = 5.0
+content_margin_right = 5.0
+content_margin_bottom = 5.0
+bg_color = Color(0.780392, 0.780392, 0.780392, 0.156863)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="GDScript" id="GDScript_fd54y"]
+script/source = "extends Container
+
+func get_text_box() -> RichTextLabel:
+	return %TextBox
+
+
+func get_name_label() -> Label:
+	return %NameLabel
+
+
+func get_icon() -> TextureRect:
+	return %Icon
+
+
+func load_info(text:String, character:String = \"\", character_color: Color =Color(), icon:Texture= null) -> void:
+	get_text_box().text = text
+	var name_label: Label = get_name_label()
+	if character:
+		name_label.text = character
+		name_label.add_theme_color_override('font_color', character_color)
+		name_label.show()
+	else:
+		name_label.hide()
+
+	var icon_node: TextureRect = get_icon()
+	if icon == null:
+		icon_node.hide()
+	else:
+		icon_node.show()
+		icon_node.texture = icon
+"
+
+[sub_resource type="PackedScene" id="PackedScene_0dkwk"]
+_bundled = {
+"conn_count": 0,
+"conns": PackedInt32Array(),
+"editable_instances": [],
+"names": PackedStringArray("HistoryItem", "PanelContainer", "offset_left", "offset_top", "offset_right", "offset_bottom", "theme_override_styles/panel", "script", "HBoxContainer", "HBoxContainer", "layout_mode", "Icon", "TextureRect", "unique_name_in_owner", "custom_minimum_size", "layout_mode", "expand_mode", "stretch_mode", "NameLabel", "Label", "unique_name_in_owner", "layout_mode", "size_flags_vertical", "TextBox", "RichTextLabel", "unique_name_in_owner", "layout_mode", "size_flags_horizontal", "size_flags_vertical", "bbcode_enabled", "text", "fit_content"),
+"node_count": 5,
+"node_paths": [NodePath("."), NodePath("./HBoxContainer"), NodePath("./HBoxContainer"), NodePath("./HBoxContainer")],
+"nodes": PackedInt32Array(-1, -1, 1, 0, -1, 6, 2, 0, 3, 1, 4, 2, 5, 3, 6, 4, 7, 5, 0, 1073741824, 0, 9, 8, -1, 1, 10, 6, 0, 1073741825, 0, 12, 11, -1, 5, 13, 7, 14, 8, 15, 9, 16, 10, 17, 11, 0, 1073741826, 0, 19, 18, -1, 3, 20, 12, 21, 13, 22, 14, 0, 1073741827, 0, 24, 23, -1, 7, 25, 15, 26, 16, 27, 17, 28, 18, 29, 19, 30, 20, 31, 21, 0),
+"variants": [-37.0, 510.0, 1085.0, 555.0, SubResource("StyleBoxFlat_upgjp"), SubResource("GDScript_fd54y"), 2, true, Vector2(30, 30), 2, 1, 4, true, 2, 0, true, 2, 3, 4, true, "Some tex", true],
+"version": 3
+}
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1hdvb"]
+content_margin_left = 10.0
+content_margin_top = 10.0
+content_margin_right = 10.0
+content_margin_bottom = 10.0
+bg_color = Color(0, 0, 0, 0.776471)
+border_color = Color(0.8, 0.8, 0.8, 0)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
+[sub_resource type="PackedScene" id="PackedScene_jxhj1"]
+_bundled = {
+"conn_count": 2,
+"conns": PackedInt32Array(1073741828, 1073741829, 74, 75, 2, 0, 0, 1073741830, 1073741831, 76, 77, 2, 0, 0),
+"editable_instances": [],
+"names": PackedStringArray("ExampleHistoryScene", "Control", "layout_direction", "layout_mode", "anchors_preset", "anchor_right", "anchor_bottom", "grow_horizontal", "grow_vertical", "size_flags_horizontal", "size_flags_vertical", "mouse_filter", "script", "font_use_global_size", "font_custom_size", "font_use_global_fonts", "font_custom_normal", "font_custom_bold", "font_custom_italics", "HistoryItem", "disabled", "HistoryBox", "ScrollContainer", "unique_name_in_owner", "visible", "layout_mode", "anchors_preset", "anchor_right", "anchor_bottom", "offset_left", "offset_top", "offset_right", "offset_bottom", "grow_horizontal", "grow_vertical", "size_flags_vertical", "theme_override_styles/panel", "horizontal_scroll_mode", "HistoryLog", "VBoxContainer", "unique_name_in_owner", "layout_direction", "layout_mode", "size_flags_horizontal", "size_flags_vertical", "ShowHistory", "Button", "layout_mode", "anchors_preset", "anchor_left", "anchor_right", "offset_left", "offset_top", "offset_right", "offset_bottom", "grow_horizontal", "size_flags_horizontal", "size_flags_vertical", "text", "HideHistory", "Button", "visible", "layout_mode", "anchors_preset", "anchor_left", "anchor_right", "offset_left", "offset_top", "offset_right", "offset_bottom", "grow_horizontal", "size_flags_horizontal", "size_flags_vertical", "text", "pressed", "_on_show_history_pressed", "pressed", "_on_hide_history_pressed"),
+"node_count": 5,
+"node_paths": [NodePath("."), NodePath("./HistoryBox"), NodePath("."), NodePath("."), NodePath("ShowHistory"), NodePath("."), NodePath("HideHistory"), NodePath(".")],
+"nodes": PackedInt32Array(-1, -1, 1, 0, -1, 19, 2, 0, 3, 1, 4, 2, 5, 3, 6, 4, 7, 5, 8, 6, 9, 7, 10, 8, 11, 9, 12, 10, 13, 11, 14, 12, 15, 13, 16, 14, 17, 15, 18, 16, 19, 17, 20, 18, 0, 1073741824, 0, 22, 21, -1, 15, 23, 19, 24, 20, 25, 21, 26, 22, 27, 23, 28, 24, 29, 25, 30, 26, 31, 27, 32, 28, 33, 29, 34, 30, 35, 31, 36, 32, 37, 33, 0, 1073741825, 0, 39, 38, -1, 5, 40, 34, 41, 35, 42, 36, 43, 37, 44, 38, 0, 1073741826, 0, 46, 45, -1, 12, 47, 39, 48, 40, 49, 41, 50, 42, 51, 43, 52, 44, 53, 45, 54, 46, 55, 47, 56, 48, 57, 49, 58, 50, 0, 1073741827, 0, 60, 59, -1, 13, 61, 51, 62, 52, 63, 53, 64, 54, 65, 55, 66, 56, 67, 57, 68, 58, 69, 59, 70, 60, 71, 61, 72, 62, 73, 63, 0),
+"variants": [1, 3, 15, 1.0, 1.0, 2, 2, 3, 3, 2, SubResource("GDScript_ginkp"), null, null, null, null, null, null, SubResource("PackedScene_0dkwk"), null, true, false, 1, 15, 1.0, 1.0, 74.0, 65.0, -74.0, -57.0, 2, 2, 3, SubResource("StyleBoxFlat_1hdvb"), 0, true, 1, 2, 3, 3, 1, 1, 1.0, 1.0, -73.0, 7.0, -9.0, 38.0, 0, 4, 4, "History", false, 1, 1, 1.0, 1.0, -123.0, 58.0, -62.0, 89.0, 0, 4, 4, "Return"],
+"version": 3
+}
+
+[sub_resource type="Resource" id="Resource_53lxk"]
+script = SubResource("GDScript_lxpkx")
+scene = SubResource("PackedScene_jxhj1")
+
+[sub_resource type="GDScript" id="GDScript_pmx0y"]
+script/source = "@tool
+extends Resource
+class_name DialogicStyle
+
+## A style represents a collection of layers and settings.
+## A style can inherit from another style.
+
+
+@export var name := \"Style\":
+	get:
+		if name.is_empty():
+			return \"Unkown Style\"
+		return name
+
+@export var inherits: DialogicStyle = null
+
+## Stores the layer order
+@export var layer_list: Array[String] = []
+## Stores the layer infos
+@export var layer_info := {
+	\"\" : DialogicStyleLayer.new()
+}
+
+
+
+
+func _init(_name := \"\") -> void:
+	if not _name.is_empty():
+		name = _name
+
+
+
+#region BASE METHODS
+# These methods are local, meaning they do NOT take inheritance into account.
+
+
+## Returns the amount of layers (the base layer is not included).
+func get_layer_count() -> int:
+	return layer_list.size()
+
+
+## Returns the index of the layer with [param id] in the layer list.
+## Returns -1 for the base layer (id==\"\") which is not in the layer list.
+func get_layer_index(id:String) -> int:
+	return layer_list.find(id)
+
+
+## Returns `true` if [param id] is a valid id for a layer.
+func has_layer(id:String) -> bool:
+	return id in layer_info or id == \"\"
+
+
+## Returns `true` if [param index] is a valid index for a layer.
+func has_layer_index(index:int) -> bool:
+	return index < layer_list.size()
+
+
+## Returns the id of the layer at [param index].
+func get_layer_id_at_index(index:int) -> String:
+	if index == -1:
+		return \"\"
+	if has_layer_index(index):
+		return layer_list[index]
+	return \"\"
+
+
+func get_layer_info(id:String) -> Dictionary:
+	var info := {\"id\": id, \"path\": \"\", \"overrides\": {}}
+
+	if has_layer(id):
+		var layer_resource: DialogicStyleLayer = layer_info[id]
+
+		if layer_resource.scene != null:
+			info.path = layer_resource.scene.resource_path
+		elif id == \"\":
+			info.path = DialogicStylesUtil.get_default_layout_base().resource_path
+
+		info.overrides = layer_resource.overrides.duplicate()
+
+	return info
+
+#endregion
+
+
+#region MODIFICATION METHODS
+# These methods modify the layers of this style.
+
+
+## Returns a new layer id not yet in use.
+func get_new_layer_id() -> String:
+	var i := 16
+	while String.num_int64(i, 16) in layer_info:
+		i += 1
+	return String.num_int64(i, 16)
+
+
+## Adds a layer with the given scene and overrides.
+## Returns the new layers id.
+func add_layer(scene:String, overrides:Dictionary = {}, id:= \"##\") -> String:
+	if id == \"##\":
+		id = get_new_layer_id()
+	layer_info[id] = DialogicStyleLayer.new(scene, overrides)
+	layer_list.append(id)
+	changed.emit()
+	return id
+
+
+## Deletes the layer with the given id.
+## Deleting the base layer is not allowed.
+func delete_layer(id:String) -> void:
+	if not has_layer(id) or id == \"\":
+		return
+
+	layer_info.erase(id)
+	layer_list.erase(id)
+
+	changed.emit()
+
+
+## Moves the layer at [param from_index] to [param to_index].
+func move_layer(from_index:int, to_index:int) -> void:
+	if not has_layer_index(from_index) or not has_layer_index(to_index-1):
+		return
+
+	var id: String = layer_list.pop_at(from_index)
+	layer_list.insert(to_index, id)
+
+	changed.emit()
+
+
+## Changes the scene property of the DialogicStyleLayer resource at [param layer_id].
+func set_layer_scene(layer_id:String, scene:String) -> void:
+	if not has_layer(layer_id):
+		return
+	layer_info[layer_id].scene = load(scene)
+	changed.emit()
+
+
+func set_layer_overrides(layer_id:String, overrides:Dictionary) -> void:
+	if not has_layer(layer_id):
+		return
+
+	layer_info[layer_id].overrides = overrides
+	changed.emit()
+
+
+## Changes an override of the DialogicStyleLayer resource at [param layer_id].
+func set_layer_setting(layer_id:String, setting:String, value:Variant) -> void:
+	if not has_layer(layer_id):
+		return
+
+	layer_info[layer_id].overrides[setting] = value
+	changed.emit()
+
+
+## Resets (removes) an override of the DialogicStyleLayer resource at [param layer_id].
+func remove_layer_setting(layer_id:String, setting:String) -> void:
+	if not has_layer(layer_id):
+		return
+
+	layer_info[layer_id].overrides.erase(setting)
+	changed.emit()
+
+#
+#endregion
+
+
+#region INHERITANCE METHODS
+# These methods are what you should usually use to get info about this style.
+
+
+## Returns `true` if this style is inheriting from another style.
+func inherits_anything() -> bool:
+	return inherits != null
+
+
+## Returns the base style of this style.
+func get_inheritance_root() -> DialogicStyle:
+	if not inherits_anything():
+		return self
+
+	var style: DialogicStyle = self
+	while style.inherits_anything():
+		style = style.inherits
+
+	return style
+
+
+## This merges some [param layer_info] with it's param ancestors layer info.
+func merge_layer_infos(new_layer_info:Dictionary, ancestor_info:Dictionary) -> Dictionary:
+	var combined := new_layer_info.duplicate(true)
+
+	combined.path = ancestor_info.path
+	combined.overrides.merge(ancestor_info.overrides)
+
+	return combined
+
+
+## Returns the layer info of the layer at [param id] taking into account inherited info.
+## If [param inherited_only] is `true`, the local info is not included.
+func get_layer_inherited_info(id:String, inherited_only := false) -> Dictionary:
+	var style := self
+	var info := {\"id\": id, \"path\": \"\", \"overrides\": {}}
+
+	if not inherited_only:
+		info = get_layer_info(id)
+
+	while style.inherits_anything():
+		style = style.inherits
+		info = merge_layer_infos(info, style.get_layer_info(id))
+
+	return info
+
+
+## Returns the layer list of the root style.
+func get_layer_inherited_list() -> Array:
+	var list := layer_list
+
+	if inherits_anything():
+		list = get_inheritance_root().layer_list
+
+	return list
+
+
+## Applies inherited info to the local layers.
+## Then removes inheritance.
+func realize_inheritance() -> void:
+	layer_list = get_layer_inherited_list()
+
+	var new_layer_info := {}
+	for id in layer_info:
+		var info := get_layer_inherited_info(id)
+		new_layer_info[id] = DialogicStyleLayer.new(info.get(\"path\", \"\"), info.get(\"overrides\", {}))
+
+	layer_info = new_layer_info
+	inherits = null
+	changed.emit()
+
+
+#endregion
+
+## Creates a fresh new style with the same settings.
+func clone() -> DialogicStyle:
+	var style := DialogicStyle.new()
+	style.name = name
+	style.inherits = inherits
+
+	var base_info := get_layer_info(\"\")
+	style.set_layer_scene(\"\", base_info.path)
+	style.set_layer_overrides(\"\", base_info.overrides)
+
+	for id in layer_list:
+		var info := get_layer_info(id)
+		style.add_layer(info.path, info.overrides, id)
+
+	return style
+
+
+## Starts preloading all the scenes used by this style.
+func prepare() -> void:
+	for id in layer_info:
+		if layer_info[id].scene:
+			ResourceLoader.load_threaded_request(layer_info[id].scene.resource_path)
+
+
+#region UPDATE OLD STYLES
+# TODO deprecated when going into beta
+
+# TODO  Deprecated, only for Styles before alpha 16!
+@export var base_scene: PackedScene = null
+# TODO Deprecated, only for Styles before alpha 16!
+@export var base_overrides := {}
+# TODO Deprecated, only for Styles before alpha 16!
+@export var layers: Array[DialogicStyleLayer] = []
+
+func update_from_pre_alpha16() -> void:
+	if not layers.is_empty():
+		var idx := 0
+		for layer in layers:
+			var id := \"##\"
+			if inherits_anything():
+				id = get_layer_inherited_list()[idx]
+			if layer.scene:
+				add_layer(layer.scene.resource_path, layer.overrides, id)
+			else:
+				add_layer(\"\", layer.overrides, id)
+			idx += 1
+		layers.clear()
+
+	if not base_scene == null:
+		set_layer_scene(\"\", base_scene.resource_path)
+		base_scene = null
+	if not base_overrides.is_empty():
+		set_layer_overrides(\"\", base_overrides)
+		base_overrides.clear()
+
+
+#endregion
+"
+
+[resource]
+script = SubResource("GDScript_pmx0y")
+name = "New_File"
+layer_list = Array[String](["10", "11", "12", "14", "15", "16", "17", "13"])
+layer_info = {
+"": SubResource("Resource_56dgf"),
+"10": SubResource("Resource_aidpj"),
+"11": SubResource("Resource_0nmc6"),
+"12": SubResource("Resource_1y1i4"),
+"13": SubResource("Resource_mp0sv"),
+"14": SubResource("Resource_824le"),
+"15": SubResource("Resource_eolcr"),
+"16": SubResource("Resource_pjmv7"),
+"17": SubResource("Resource_53lxk")
+}
+metadata/_latest_layer = "13"

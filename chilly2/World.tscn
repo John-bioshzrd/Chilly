@@ -1,0 +1,75 @@
+[gd_scene load_steps=6 format=3 uid="uid://cpl6tpw3wfqse"]
+
+[ext_resource type="PackedScene" uid="uid://b1ir5di4s8ivx" path="res://Character.tscn" id="1_c6gwx"]
+[ext_resource type="PackedScene" uid="uid://yto0wud8mal0" path="res://Objects/container.tscn" id="2_2dftf"]
+[ext_resource type="PackedScene" uid="uid://bjf5inc6l4a3y" path="res://Objects/funnel.tscn" id="2_bcbcq"]
+[ext_resource type="PackedScene" uid="uid://c8k7k1jqvcao6" path="res://Objects/lemon.tscn" id="4_js7pq"]
+
+[sub_resource type="GDScript" id="GDScript_c6gwx"]
+script/source = "extends Node2D
+
+var paths1: Array[TubeChain] = []
+# Called when the node enters the scene tree for the first time.
+func _ready() -> void:
+	#paths1 = assign_paths(\"Funnel\",\"Container\")
+	paths1.assign(assign_paths(\"Funnel\", \"Container\"))
+	for i in range(paths1.size()-1):
+		paths1[i].next = paths1[i+1]
+	pass # Replace with function body.
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta: float) -> void:
+	print(paths1)
+	
+	
+	pass
+
+# Searches for a funnel and a sequence of containers
+# Returns an array of paths, starting with the funnel
+func assign_paths(fName, cName):
+	var nodes = []
+	var count = 1
+	
+	var fNode = find_node(fName)
+	nodes.append(fNode)
+	
+	while true:
+		var node = find_node(cName + str(count))
+		if !node:
+			return nodes
+		nodes.append(node)
+		count += 1
+
+func find_node(name):
+	var node = get_tree().current_scene.find_child(name, true, false)
+	if node:
+		return node
+	else:
+		return null
+"
+
+[node name="Node2D" type="Node2D"]
+script = SubResource("GDScript_c6gwx")
+
+[node name="Lemon" parent="." instance=ExtResource("4_js7pq")]
+position = Vector2(291, 160)
+
+[node name="StaticBody2D" type="StaticBody2D" parent="."]
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D"]
+position = Vector2(578, 350)
+scale = Vector2(61.4028, 39.519)
+polygon = PackedVector2Array(-9.49468, 7.6672, 9.75526, 7.61659, 9.21782, 1.72069, 4.33205, 1.72069, 4.29948, 6.09834, 1.82402, 6.09834, -0.52115, 3.23895, -3.66433, 3.01121, -4.80434, 5.61755, -9.41325, 5.56695)
+
+[node name="Node2D" parent="StaticBody2D" instance=ExtResource("1_c6gwx")]
+position = Vector2(373, 300)
+scale = Vector2(4.2, 4.2)
+
+[node name="Container1" parent="." instance=ExtResource("2_2dftf")]
+position = Vector2(132, 281)
+
+[node name="Funnel" parent="." instance=ExtResource("2_bcbcq")]
+position = Vector2(205, 160)
+
+[node name="Container2" parent="." instance=ExtResource("2_2dftf")]
+position = Vector2(216, 376)

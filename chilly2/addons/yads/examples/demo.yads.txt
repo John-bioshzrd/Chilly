@@ -1,0 +1,165 @@
+=== basics
+# This is a comment.
+# Nodes start with === followed by their name.
+{# This comment style is also supported,
+and it can be multi-line. #}
+
+We send text to the GUI until a double line break, a code snippet,
+a list of replies or the end of a node.
+
+Character name:
+By placing a : at the end of a new line we change the character that is speaking.
+
+Subsequent blocks will continue to use the same character.
+Character names reset to empty when changing nodes.
+The handler sends a signal which lets your code react to a character change,
+e.g. by changing a character icon or moving a 3D camera.
+
+Character name (relaxed, camera_2):
+You can add extra metadata to the character change by putting a comma-separated
+list in brackets. This metadata will also be emitted so that you can
+enrich character changes with emotions, more complex camera changes or other things.
+Note that metadata cannot contain spaces.
+
+BBcode is supported,
+[shake rate=20.0 level=5 connected=1]
+[rainbow freq=1.0 sat=0.8 val=0.8 speed=1.0]
+and can be put directly in here[/rainbow][/shake].
+
+This is how you supply player replies.
+-> This is a player choice.
+-> This is another one.
+Line breaks in replies are allowed.
+
+If the replies didn't end conversation or go to another node,
+we can continue talking.
+This means we don't have to create extra nodes just to write
+longer pieces or when giving player replies that are there just for flavor.
+
+We will cover commands in the next node.
+All of them are surrounded by special syntax.
+{% goto basic_commands %}
+
+=== basic_commands
+
+Commands "attach" to previous text (replies or regular).
+Let's set a variable.
+{% x = 1 %}
+
+Variables can be multiple types, of course.
+Commands can be chained and will run in order.
+{% a = "abc" %}
+{% b = 2.0 %}
+
+-> This reply sets a variable.
+Indentation tabs are optional.
+	{% x = 1 %}
+-> Continue dialogue in another node
+	{% goto conditional_blocks %}
+-> End dialogue.
+	{% finish %}
+
+If we reach the end of the node, we simply finish dialogue.
+
+=== conditional_blocks
+
+{% if x == 1 %}
+	Conditional text.
+	Tabs are for convenience and aren't taken into consideration.
+{% elif x == 2 %}
+	Nested conditionals are not supported at the moment.
+{% else %}
+	Default version of the text.
+{% endif %}
+
+{% if x == 1 %}
+	Both the elif and else segment are optional.
+{% endif %}
+
+The dialogue handler evaluates conditions on the go.
+After a text block appears, the handler will collect replies
+as long as the next block is a reply or the next condition
+can return a reply as its first block.
+-> A reply.
+{% if 1 == 1 %}
+	-> Replies and their commands can be conditional too.
+	{% x = 1 %}
+{% else %}
+	-> Default reply.
+{% endif %}
+-> Another reply for good measure.
+
+Now let's see some advanced stuff.
+{% goto commands_part_2 %}
+
+=== commands_part_2
+# If you put blocks at the start of a node, they will run when entering the node.
+{% z = 1 %}
+{% a = 2 %}
+
+Once you add regular text, any subsequent commands will "attach"
+to the previous block of text and execute once it is displayed - as normal.
+{% x = 7 %}
+
+You can define your own API (see documentation for details).
+This can be used to do anything you want,
+but probably most importantly to trigger game events.
+The following is a debug function which prints the value of a variable.
+{% dprint(z) %}
+
+In assignments, right hand side is evaluated as an expression,
+so you can use functions and so on.
+{% b = 2+5 %}
+{% dprint(b) %}
+
+{% if get_four() == 4 %}
+	Another example of custom API usage
+	could be fetching values from game logic.
+{% endif %}
+
+Note that if you chain commands after goto or finish,
+the commands after those won't execute.
+{% b = 9 %}
+{% goto progress_variables %}
+{% b = 7 %}
+
+=== progress_variables
+# If you try to use a variable before it has been assigned (eg in an if condition),
+# it will cause an error.
+# But simply setting a variable at start will reset some sort of progress you want to keep;
+# In those cases we use this special syntax,
+# which only sets the variable to the value if the variable doesn't exist yet.
+{% xyz ?= 4 %}
+
+{% if xyz == 4 %}
+	Example text.
+{% endif %}
+
+# If you add scripts after an if statement, they will work without text
+# similarly to putting them at the start of a node.
+{% goto advanced_condtionals %}
+
+=== advanced_condtionals
+
+This is some dummy text.
+
+{% if 1 == 1 %}
+	Some character:
+	You can change characters inside if blocks.
+{% endif %}
+
+-> When replies are given after conditional blocks,
+they will appear after whichever text block ends up appearing.
+
+More dummy text.
+{% if 1 == 1 %}
+	Conditionals can contain multiple text blocks.
+	
+	This means you can add replies here too.
+	-> They will appear along any subsequent replies.
+{% endif %}
+-> This reply will appear either under the
+conditional text along with its attached reply,
+or under the dummy text above.
+
+Try changing the conditions to see how the reply listing behaves!

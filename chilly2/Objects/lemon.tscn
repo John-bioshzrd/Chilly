@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3 uid="uid://c8k7k1jqvcao6"]
+
+[ext_resource type="Script" uid="uid://cd4w8huiss4dp" path="res://Objects/lemon.gd" id="1_8yiu7"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_exlhe"]
+
+[node name="Lemon" type="Area2D"]
+script = ExtResource("1_8yiu7")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_exlhe")
+
+[node name="Node2D" type="Node2D" parent="."]

@@ -1,0 +1,24 @@
+[gd_resource type="AnimationNodeBlendSpace2D" load_steps=5 format=3 uid="uid://d1s4tcfd4wrvl"]
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_mrshr"]
+animation = &"PushU"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_6rc1s"]
+animation = &"PushD"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8apai"]
+animation = &"Push"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_8l7vl"]
+animation = &"Push"
+
+[resource]
+blend_point_0/node = SubResource("AnimationNodeAnimation_mrshr")
+blend_point_0/pos = Vector2(0, 1)
+blend_point_1/node = SubResource("AnimationNodeAnimation_6rc1s")
+blend_point_1/pos = Vector2(0, -1)
+blend_point_2/node = SubResource("AnimationNodeAnimation_8apai")
+blend_point_2/pos = Vector2(-1, 0)
+blend_point_3/node = SubResource("AnimationNodeAnimation_8l7vl")
+blend_point_3/pos = Vector2(1, 0)
+blend_mode = 1
