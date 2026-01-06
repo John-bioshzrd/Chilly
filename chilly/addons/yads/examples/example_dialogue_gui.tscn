@@ -1,0 +1,104 @@
+[gd_scene load_steps=5 format=3 uid="uid://evi8bigmddsk"]
+
+[ext_resource type="Script" uid="uid://bs6ku2g5mmnmm" path="res://addons/yads/gui/dialogue_gui.gd" id="1_pdyht"]
+[ext_resource type="Script" uid="uid://scqy43gdiysm" path="res://addons/yads/gui/dialogue_label.gd" id="3_pdyht"]
+
+[sub_resource type="Gradient" id="Gradient_mi1wf"]
+offsets = PackedFloat32Array(0, 0.640167)
+colors = PackedColorArray(1, 1, 1, 1, 0, 0, 0, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_pdyht"]
+gradient = SubResource("Gradient_mi1wf")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(0, 0)
+
+[node name="ExampleDialogueGui" type="CanvasLayer"]
+script = ExtResource("1_pdyht")
+
+[node name="Panel" type="Panel" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -675.0
+offset_top = -411.0
+offset_right = 675.0
+offset_bottom = -51.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer"]
+layout_mode = 2
+
+[node name="CharacterLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.501961)
+layout_mode = 2
+mouse_filter = 1
+bbcode_enabled = true
+text = "Character"
+fit_content = true
+scroll_active = false
+
+[node name="DialogueLabel" type="RichTextLabel" parent="Panel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "Dialogue"
+fit_content = true
+scroll_active = false
+visible_characters_behavior = 1
+script = ExtResource("3_pdyht")
+
+[node name="Spoke" type="AudioStreamPlayer" parent="Panel/MarginContainer/VBoxContainer/DialogueLabel"]
+
+[node name="Finished" type="AudioStreamPlayer" parent="Panel/MarginContainer/VBoxContainer/DialogueLabel"]
+
+[node name="PromptTexture" type="TextureRect" parent="Panel/MarginContainer/VBoxContainer/DialogueLabel"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -40.0
+grow_horizontal = 0
+grow_vertical = 0
+texture = SubResource("GradientTexture2D_pdyht")
+
+[node name="Timer" type="Timer" parent="Panel/MarginContainer/VBoxContainer/DialogueLabel"]
+one_shot = true
+
+[node name="AutocompleteTimer" type="Timer" parent="Panel/MarginContainer/VBoxContainer/DialogueLabel"]
+one_shot = true
+
+[node name="ResponsesMenu" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 8
+theme_override_constants/separation = 5
+
+[node name="ResponseExample" type="Button" parent="Panel/MarginContainer/VBoxContainer/ResponsesMenu"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Response example"
+autowrap_mode = 3
+
+[connection signal="timeout" from="Panel/MarginContainer/VBoxContainer/DialogueLabel/Timer" to="Panel/MarginContainer/VBoxContainer/DialogueLabel" method="_on_timer_timeout"]
+[connection signal="timeout" from="Panel/MarginContainer/VBoxContainer/DialogueLabel/AutocompleteTimer" to="Panel/MarginContainer/VBoxContainer/DialogueLabel" method="_on_autocomplete_timer_timeout"]

@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://dugctrh0qdyoe"]
+
+[ext_resource type="Script" uid="uid://bp3fp32hxv12" path="res://addons/yads/examples/example_handler.gd" id="1_uq2ov"]
+
+[node name="ExampleHandler" type="Node"]
+script = ExtResource("1_uq2ov")
+dialogue_file = "res://addons/yads/examples/demo.yads.txt"
+start_node = "basics"

@@ -1,6 +1,6 @@
 [gd_scene load_steps=5 format=3 uid="uid://bjf5inc6l4a3y"]
 
-[ext_resource type="Script" uid="uid://cjj1qfoudwsqm" path="res://Objects/switch.gd" id="1_igd8e"]
+[ext_resource type="Script" uid="uid://cjj1qfoudwsqm" path="res://Objects/game/switch.gd" id="1_igd8e"]
 
 [sub_resource type="GDScript" id="GDScript_fhhym"]
 script/source = "extends TubeChain

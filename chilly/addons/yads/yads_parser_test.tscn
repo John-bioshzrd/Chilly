@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://b75cqtpwcji8j"]
+
+[ext_resource type="Script" uid="uid://cnvq4koykco5h" path="res://addons/yads/yads_parser_test.gd" id="1_bchyk"]
+
+[node name="YadsTest" type="Node"]
+script = ExtResource("1_bchyk")
