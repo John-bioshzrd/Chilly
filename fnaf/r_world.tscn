@@ -1,0 +1,31 @@
+[gd_scene load_steps=6 format=3 uid="uid://b05nq6k08oubf"]
+
+[ext_resource type="Script" uid="uid://bc3s8tyc8s1p6" path="res://RealWorld.gd" id="1_majnb"]
+[ext_resource type="Script" uid="uid://cns8bblgg7r5v" path="res://scripts/camera_office.gd" id="2_1fyc5"]
+[ext_resource type="Shader" uid="uid://bm0m7vwvmfve3" path="res://r_world.gdshader" id="2_5aok2"]
+[ext_resource type="Texture2D" uid="uid://ceetanilrr5e0" path="res://sprites/office.png" id="2_eg8jc"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_1fyc5"]
+shader = ExtResource("2_5aok2")
+shader_parameter/opacity = 1.0
+
+[node name="RWorld" type="Node2D"]
+script = ExtResource("1_majnb")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+editor_draw_limits = true
+script = ExtResource("2_1fyc5")
+
+[node name="Pan" type="Node2D" parent="."]
+
+[node name="Background" type="Sprite2D" parent="."]
+material = SubResource("ShaderMaterial_1fyc5")
+position = Vector2(4.999998, -11.999994)
+scale = Vector2(0.71589726, 0.7158974)
+texture = ExtResource("2_eg8jc")
+
+[node name="DoorL" type="Marker2D" parent="."]
+position = Vector2(-674, 0)
+
+[node name="DoorR" type="Marker2D" parent="."]
+position = Vector2(674, 0)
