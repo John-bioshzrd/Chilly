@@ -47,21 +47,3 @@ func move(
 		tween.tween_property(self, "global_position", pos, seconds).set_trans(trans)
 
 	return tween.finished
-
-
-
-func say(text:String, tag:String = "") -> Signal:
-	if data == null:
-		push_error("VNCharacter data resource is not assigned")
-		emit_signal("garbage_error")
-		return garbage_error
-
-	var d := data.dialog_box.instantiate()
-	if d == null:
-		push_error("DialogBox PackedScene failed to instantiate")
-		emit_signal("garbage_error")
-		return garbage_error
-
-	d.dialog = text
-	get_tree().root.add_child(d)
-	return d.complete

@@ -1,6 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://cj8dv0k2wc4ch"]
+[gd_scene load_steps=5 format=3 uid="uid://cj8dv0k2wc4ch"]
 
 [ext_resource type="Script" uid="uid://b4uhu2d3kvd4f" path="res://imports/vn_world_1_again.gd" id="1_fwabj"]
+[ext_resource type="PackedScene" uid="uid://d2bdmxc6jqhdf" path="res://imports/characters/chiikawa.tscn" id="2_r2rq0"]
 [ext_resource type="Script" uid="uid://d0ud4s8685ai2" path="res://Scripts/handler.gd" id="2_tv1bh"]
 [ext_resource type="Script" uid="uid://cget0nxx3if7a" path="res://Scripts/script_executor.gd" id="3_q4wk1"]
 
@@ -95,3 +96,8 @@ anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("3_q4wk1")
+
+[node name="Chiikawa" parent="." instance=ExtResource("2_r2rq0")]
+layout_mode = 0
+anchors_preset = 0
+expand_mode = 0

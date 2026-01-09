@@ -15,3 +15,8 @@ func _ready() -> void:
 
 	handler.start()
 	print("start() called")
+	
+func _process(delta: float) -> void:
+	await $Chiikawa.move($Center)
+	await $Chiikawa.move($CenterRight)
+	
