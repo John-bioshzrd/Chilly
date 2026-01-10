@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3 uid="uid://cdr13ai33tpku"]
+[gd_scene load_steps=4 format=3 uid="uid://cdr13ai33tpku"]
 
 [ext_resource type="Script" uid="uid://bjxd1l35bvk5s" path="res://scenes/enemies/base_enemy.gd" id="1_4pcic"]
+[ext_resource type="AudioStream" uid="uid://cm680c8rxvw70" path="res://sfx/gun/bang-43964.mp3" id="2_4pcic"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_jesjk"]
 size = Vector2(161, 415)
@@ -12,5 +13,10 @@ script = ExtResource("1_4pcic")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
 shape = SubResource("RectangleShape2D_jesjk")
+
+[node name="Sound" type="Node2D" parent="."]
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="Sound"]
+stream = ExtResource("2_4pcic")
 
 [connection signal="input_event" from="Area2D" to="." method="_on_area_2d_input_event"]

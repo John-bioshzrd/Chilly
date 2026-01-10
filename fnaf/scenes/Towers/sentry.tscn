@@ -1,0 +1,39 @@
+[gd_scene load_steps=6 format=3 uid="uid://qgbycd6e82h4"]
+
+[ext_resource type="Texture2D" uid="uid://bmriiywls3tll" path="res://sprites/towers/gun.png" id="1_4esmp"]
+[ext_resource type="Script" uid="uid://b6lm6fs0rt1pi" path="res://scenes/Towers/sentry.gd" id="1_opsne"]
+[ext_resource type="AudioStream" uid="uid://cm680c8rxvw70" path="res://sfx/gun/bang-43964.mp3" id="2_jccwu"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_jccwu"]
+radius = 43.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_opsne"]
+radius = 228.17757
+
+[node name="Sentry" type="Node2D"]
+script = ExtResource("1_opsne")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(1, 1)
+scale = Vector2(0.51, 0.51)
+texture = ExtResource("1_4esmp")
+offset = Vector2(-68, -8)
+
+[node name="Marker2D" type="Marker2D" parent="Sprite2D"]
+position = Vector2(-179, 5)
+
+[node name="Node2D" type="Node2D" parent="."]
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="Node2D"]
+stream = ExtResource("2_jccwu")
+
+[node name="Hurtbox" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox"]
+shape = SubResource("CircleShape2D_jccwu")
+
+[node name="Hurtbox2" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hurtbox2"]
+shape = SubResource("CircleShape2D_opsne")
+debug_color = Color(0.95635587, 0, 0.540944, 0.41960785)

@@ -1,31 +1,73 @@
-[gd_scene load_steps=6 format=3 uid="uid://b05nq6k08oubf"]
+[gd_scene load_steps=8 format=3 uid="uid://b05nq6k08oubf"]
 
 [ext_resource type="Script" uid="uid://bc3s8tyc8s1p6" path="res://RealWorld.gd" id="1_majnb"]
 [ext_resource type="Script" uid="uid://cns8bblgg7r5v" path="res://scripts/camera_office.gd" id="2_1fyc5"]
 [ext_resource type="Shader" uid="uid://bm0m7vwvmfve3" path="res://r_world.gdshader" id="2_5aok2"]
 [ext_resource type="Texture2D" uid="uid://ceetanilrr5e0" path="res://sprites/office.png" id="2_eg8jc"]
+[ext_resource type="AudioStream" uid="uid://c40efy32xm8uv" path="res://sfx/gun/gunClick.mp3" id="5_1fyc5"]
+[ext_resource type="Script" uid="uid://dhiro4cv3sb7x" path="res://scripts/z_world.gd" id="6_plxvc"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_1fyc5"]
 shader = ExtResource("2_5aok2")
 shader_parameter/opacity = 1.0
 
-[node name="RWorld" type="Node2D"]
+[node name="World" type="Node2D"]
 script = ExtResource("1_majnb")
 
-[node name="Camera2D" type="Camera2D" parent="."]
-editor_draw_limits = true
-script = ExtResource("2_1fyc5")
+[node name="Sound" type="Node2D" parent="."]
 
-[node name="Pan" type="Node2D" parent="."]
+[node name="gunClick" type="AudioStreamPlayer" parent="Sound"]
+stream = ExtResource("5_1fyc5")
+max_polyphony = 6
 
-[node name="Background" type="Sprite2D" parent="."]
+[node name="RWorld" type="Node2D" parent="."]
+
+[node name="Background" type="Sprite2D" parent="RWorld"]
 material = SubResource("ShaderMaterial_1fyc5")
 position = Vector2(4.999998, -11.999994)
 scale = Vector2(0.71589726, 0.7158974)
 texture = ExtResource("2_eg8jc")
 
-[node name="DoorL" type="Marker2D" parent="."]
+[node name="DoorL" type="Marker2D" parent="RWorld"]
 position = Vector2(-674, 0)
 
-[node name="DoorR" type="Marker2D" parent="."]
+[node name="DoorR" type="Marker2D" parent="RWorld"]
 position = Vector2(674, 0)
+
+[node name="Button" type="Button" parent="RWorld"]
+offset_right = 61.0
+offset_bottom = 46.0
+text = "button"
+
+[node name="Camera2D" type="Camera2D" parent="RWorld"]
+editor_draw_limits = true
+script = ExtResource("2_1fyc5")
+
+[node name="ZWorld" type="Node2D" parent="."]
+script = ExtResource("6_plxvc")
+
+[node name="Camera2D" type="Camera2D" parent="ZWorld"]
+position = Vector2(-491, -1541)
+offset = Vector2(50.15, 0)
+editor_draw_limits = true
+
+[node name="ZWorldUI" type="CanvasLayer" parent="."]
+
+[node name="HFlowContainer" type="HFlowContainer" parent="ZWorldUI"]
+anchors_preset = -1
+anchor_left = -0.35900003
+anchor_top = -0.324
+anchor_right = 0.238
+anchor_bottom = 0.21100001
+offset_left = 0.5680237
+offset_top = -0.04800415
+offset_right = -231.176
+offset_bottom = -138.72801
+
+[node name="Button" type="Button" parent="ZWorldUI/HFlowContainer"]
+layout_mode = 2
+text = "b1"
+
+[node name="Button2" type="Button" parent="ZWorldUI/HFlowContainer"]
+layout_mode = 2
+text = "b2"
